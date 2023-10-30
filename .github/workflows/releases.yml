@@ -69,7 +69,7 @@ jobs:
         if: runner.os == 'macOs'
         id: getversion_mac
         run: |
-          echo "VERSION=$(sed -n 's/Version:\s*//p' DESCRIPTION)" >> $GITHUB_OUTPUT
+          echo "VERSION=$(sed -n 's/Version:[[:space:]]*//p' DESCRIPTION | tr -d '[:space:]')" >> $GITHUB_OUTPUT
       - name: Install gsl (Mac)
         if: runner.os == 'macOS'
         run: |
