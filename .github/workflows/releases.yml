@@ -64,14 +64,12 @@ jobs:
         id: getversion
         shell: bash
         run: |
-          echo "VERSION=$(cat DESCRIPTION | grep -Po '(?<=Version\:\s).*')"
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "VERSION=$(cat DESCRIPTION | grep -Po '(?<=Version\:\s).*')" >> $GITHUB_OUTPUT
       - name: Read VERSION file (macOS)
         if: runner.os == 'macOs'
         id: getversion_mac
         run: |
-          echo "VERSION=$(cat DESCRIPTION | grep -po '(?<=Version\:\s).*')"
-          echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+          echo "VERSION=$(cat DESCRIPTION | grep -eo '(?<=Version\:\s).*')" >> $GITHUB_OUTPUT
       - name: Install gsl (Mac)
         if: runner.os == 'macOS'
         run: |
