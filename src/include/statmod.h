@@ -10,7 +10,6 @@
 //
 //
 #include "stdafx.h"
-
 #include <cmath>
 
 #define OPTIM_NO_FLAGS    0
@@ -28,9 +27,8 @@
     #include <Eigen/Dense>
 
 #endif
-    
-#include <gsl/gsl_rng.h>
-#include <gsl/gsl_randist.h>
+
+#include "seeder.h"
 #include <nlopt.hpp>
 #include "log_likelihoods.h"
 #include "IDPrior.h"
@@ -40,7 +38,6 @@
 #pragma once
 #ifndef statmodH
 #define statmodH
-
 
 using namespace std;
 
@@ -468,13 +465,14 @@ std::vector<double> startValue_F(statModel<LL, PR>  *M,
   // test = M->startValue();
   // Set up the random number portion for the code
   // const gsl_rng_type * T;
-  gsl_rng * r;
+//   gsl_rng * r;
   
-  gsl_rng_env_setup();
- // T = gsl_rng_default;
-  r = gsl_rng_alloc (gsl_rng_mt19937);
-  gsl_rng_set(r, 8675309); // set the same seed for every GA run
-  
+//   gsl_rng_env_setup();
+//  // T = gsl_rng_default;
+//   r = gsl_rng_alloc (gsl_rng_mt19937);
+//   gsl_rng_set(r, 8675309); // set the same seed for every GA run
+  Seeder* seeder = Seeder::getInstance();
+  gsl_rng * r = seeder->get_gsl_rng();
   population[NI] = startV; 
   llist[NI] = M->negPenLike(test); 
   

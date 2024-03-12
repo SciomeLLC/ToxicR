@@ -1,8 +1,9 @@
 #include "seeder.h"
-static Seeder seeder;
+Seeder* Seeder::instance = nullptr;
 
 // [[Rcpp::export]]
 void setseedGSL(const int s) {
-    seeder.setSeed(s);
+    Seeder* seeder = Seeder::getInstance();
+    seeder->setSeed(s);
     return;
 }

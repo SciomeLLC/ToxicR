@@ -42,9 +42,9 @@
 #include <Eigen/Dense>
 #endif
 
+#include "seeder.h"
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_spline.h>
-#include <gsl/gsl_randist.h>
 #include <gsl/gsl_cdf.h>
 
 #include "dBMDstatmod.h"
@@ -89,9 +89,13 @@ mcmcSamples MCMC_bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::M
   //  ziggurat is used as it is the fastest sampler algorithm gsl has
   Eigen::MatrixXd rNormal(n, samples);
   rNormal.setZero(); 
-  gsl_rng *r;
+  // gsl_rng *r;
   // gsl_rng_env_setup();
-  r = gsl_rng_alloc(gsl_rng_mt19937);
+  // r = gsl_rng_alloc(gsl_rng_mt19937);
+  Rcpp::Rcout << "Getting static " << std::endl;
+  Seeder* seeder = Seeder::getInstance();
+  gsl_rng *r = seeder->get_gsl_rng();
+  Rcpp::Rcout << "Got gsl rng" << std::endl;
   for (int i = 0; i < samples; i++)
   {
     for (int j = 0; j < n; j++)
@@ -167,7 +171,7 @@ mcmcSamples MCMC_bmd_analysis_DNC(Eigen::MatrixXd Y, Eigen::MatrixXd D, Eigen::M
                         : model.log_likelihood.compute_BMD_ADDED_NC(nSamples.col(i), BMR);
   }
 
-  gsl_rng_free(r);
+  // gsl_rng_free(r);
   /////////////////////////////////////////////////////////////////
   rVal.BMD = BMD;          // vector of burn in BMD samples
   rVal.samples = nSamples; // vector of sample parameters
@@ -227,11 +231,14 @@ mcmcSamples mcmc_continuous(cBMDModel<LL, PR> *model, int samples,
   //  ziggurat is used as it is the fastest sampler algorithm gsl has
   Eigen::MatrixXd rNormal(n, samples);
   rNormal.setZero(); 
-
-  gsl_rng *r;
+  
+  Rcpp::Rcout << "Getting static seeder 2" << std::endl;
+  Seeder* seeder = Seeder::getInstance();
+  gsl_rng *r = seeder->get_gsl_rng();
+  Rcpp::Rcout << "Got static seeder 2" << std::endl;
   // gsl_rng_env_setup();
-  r = gsl_rng_alloc(gsl_rng_mt19937);
-  gsl_rng_set(r, mySeed);
+  // r = gsl_rng_alloc(gsl_rng_mt19937);
+  // gsl_rng_set(r, mySeed);
   for (int i = 0; i < samples; i++)
   {
     for (int j = 0; j < n; j++)
