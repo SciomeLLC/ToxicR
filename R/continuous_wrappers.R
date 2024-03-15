@@ -73,6 +73,7 @@
 #' @param transform Transforms doses using \eqn{\log(dose+\sqrt{dose^2+1})}. Note: this is a log transform that has a derivative defined when dose =0.
 #' @param BMD_TYPE Deprecated version of BMR_TYPE that specifies the type of benchmark dose analysis to be performed
 #' @param threads specify the number of OpenMP threads to use for the calculations. Default = 2
+#' @param seed sets the GSL seed. Default = 12331
 #' @return Returns a model object class with the following structure:
 #' \itemize{
 #'    \item \code{full_model}:  The model along with the likelihood distribution. 
@@ -112,7 +113,8 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
                                    BMR = 0.1, point_p = 0.01, distribution = "normal-ncv",
                                    alpha = 0.05, samples = 25000, degree=2,
                                    burnin = 1000, BMD_priors = FALSE, ewald = FALSE,
-                                   transform = FALSE, BMD_TYPE = NA, threads = 2){
+                                   transform = FALSE, BMD_TYPE = NA, threads = 2, seed = 12331){
+    setseedGSL(seed)
     Y <- as.matrix(Y) 
     D <- as.matrix(D) 
     

@@ -349,7 +349,7 @@
 
     # plot the model average curve
     if ("BMDdichotomous_MA_mcmc" %in% class(A)) { # mcmc run
-
+      A$posterior_probs[!is.finite(A$posterior_probs)] = 0
       n_samps <- nrow(A[[fit_idx[1]]]$mcmc_result$PARM_samples)
       data_d <- A[[fit_idx[1]]]$data
       max_dose <- max(data_d[, 1])
@@ -491,6 +491,9 @@
       df <- NULL
 
       for (ii in 1:length(fit_idx)) {
+        if (!is.finite(A$posterior_probs[ii])){
+           A$posterior_probs[ii] = 0
+        }
         if (A$posterior_probs[ii] > 0.05) {
           fit <- A[[fit_idx[ii]]]
           if (fit$model == "hill") {
@@ -538,7 +541,7 @@
 
       return(plot_gg + coord_cartesian(xlim = c(min(doses), max(doses)), expand = F))
     } else if ("BMDdichotomous_MA_laplace" %in% class(A)) { # mcmc run
-
+      A$posterior_probs[!is.finite(A$posterior_probs)] = 0
       class_list <- names(A)
       fit_idx <- grep("Indiv_", class_list)
       num_model <- length(A$posterior_probs)
@@ -566,35 +569,44 @@
         fit_loop <- A[[ii]]
 
         if (fit_loop$model == "hill") {
-          temp_f[ii, ] <- .dich_hill_f(fit_loop$parameters, test_doses)
+          weight <- A$posterior_probs[ii]
+          temp_f[ii, ] <- .dich_hill_f(fit_loop$parameters, test_doses)*weight
         }
         if (fit_loop$model == "gamma") {
-          temp_f[ii, ] <- .dich_gamma_f(fit_loop$parameters, test_doses)
+          weight <- A$posterior_probs[ii]
+          temp_f[ii, ] <- .dich_gamma_f(fit_loop$parameters, test_doses)*weight
         }
         if (fit_loop$model == "logistic") {
-          temp_f[ii, ] <- .dich_logist_f(fit_loop$parameters, test_doses)
+          weight <- A$posterior_probs[ii]
+          temp_f[ii, ] <- .dich_logist_f(fit_loop$parameters, test_doses)*weight
         }
         if (fit_loop$model == "log-logistic") {
-          temp_f[ii, ] <- .dich_llogist_f(fit_loop$parameters, test_doses)
+          weight <- A$posterior_probs[ii]
+          temp_f[ii, ] <- .dich_llogist_f(fit_loop$parameters, test_doses)*weight
         }
         if (fit_loop$model == "probit") {
-          temp_f[ii, ] <- .dich_probit_f(fit_loop$parameters, test_doses)
+          weight <- A$posterior_probs[ii]
+          temp_f[ii, ] <- .dich_probit_f(fit_loop$parameters, test_doses)*weight
         }
         if (fit_loop$model == "log-probit") {
-          temp_f[ii, ] <- .dich_lprobit_f(fit_loop$parameters, test_doses)
+          weight <- A$posterior_probs[ii]
+          temp_f[ii, ] <- .dich_lprobit_f(fit_loop$parameters, test_doses)*weight
         }
         if (fit_loop$model == "multistage") {
-          temp_f[ii, ] <- .dich_multistage_f(fit_loop$parameters, test_doses)
+          weight <- A$posterior_probs[ii]
+          temp_f[ii, ] <- .dich_multistage_f(fit_loop$parameters, test_doses)*weight
         }
         if (fit_loop$model == "qlinear") {
-          temp_f[ii, ] <- .dich_qlinear_f(fit_loop$parameters, test_doses)
+          weight <- A$posterior_probs[ii]
+          temp_f[ii, ] <- .dich_qlinear_f(fit_loop$parameters, test_doses)*weight
         }
         if (fit_loop$model == "weibull") {
-          temp_f[ii, ] <- .dich_weibull_f(fit_loop$parameters, test_doses)
+          weight <- A$posterior_probs[ii]
+          temp_f[ii, ] <- .dich_weibull_f(fit_loop$parameters, test_doses)*weight
         }
       }
 
-      me <- colMeans(temp_f)
+      me <- colSums(temp_f)
 
       # Fitting line is not from sample- Need to double check with Matt
 
@@ -637,6 +649,9 @@
       df <- NULL
 
       for (ii in 1:length(fit_idx)) {
+        if (!is.finite(A$posterior_probs[ii])){
+           A$posterior_probs[ii] = 0
+        }
         if (A$posterior_probs[ii] > 0.05) {
           fit <- A[[ii]]
           if (fit$model == "hill") {
