@@ -1,7 +1,6 @@
 ^.*\.Rproj$
-^\.Rproj\.user$
 ^\.DS_Store$
-^\.(RData|Rhistory)$
+^\.(RData|Rhistory|RProj\.user)$
 ^\.gitignore$
 ^\.git$
 \.vscode
@@ -11,3 +10,6 @@
 \.git/
 ^\.dll$
 ^\.github$
+^\.log$
+^CHANGELOG\.md$
+^cran-comments\.md$

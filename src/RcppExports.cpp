@@ -150,11 +150,19 @@ BEGIN_RCPP
 END_RCPP
 }
 // setseedGSL
+<<<<<<< HEAD
 void setseedGSL(const int s);
 RcppExport SEXP _ToxicR_setseedGSL(SEXP sSEXP) {
 BEGIN_RCPP
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< const int >::type s(sSEXP);
+=======
+void setseedGSL(int s);
+RcppExport SEXP _ToxicR_setseedGSL(SEXP sSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< int >::type s(sSEXP);
+>>>>>>> 63dbceeb558188b32ad01c28d2e449f392648342
     setseedGSL(s);
     return R_NilValue;
 END_RCPP

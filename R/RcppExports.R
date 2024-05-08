@@ -37,7 +37,11 @@
     .Call(`_ToxicR_polyk`, dose, tumor, daysOnStudy)
 }
 
+<<<<<<< HEAD
 setseedGSL <- function(s) {
+=======
+.setseedGSL <- function(s) {
+>>>>>>> 63dbceeb558188b32ad01c28d2e449f392648342
     invisible(.Call(`_ToxicR_setseedGSL`, s))
 }
 
