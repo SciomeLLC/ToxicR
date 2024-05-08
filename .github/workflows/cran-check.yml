@@ -9,7 +9,13 @@ permissions:
 
 jobs:
   cran-check: 
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, ubuntu-20.04, windows-latest, windows-2019, macos-latest, macos-11]
+        # platform: [x86, x64]
+        r: ['release', 'devel', '4.1', 'oldrel-1', 'oldrel-4']
+    runs-on: '${{ matrix.os }}'
+    name: ${{ matrix.os }} (${{ matrix.r}})
     env:
       _R_CHECK_DONTTEST_EXAMPLES_: false
     steps:
