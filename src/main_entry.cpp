@@ -67,6 +67,7 @@ SOFTWARE.
 #include "dichotomous_entry_code.h"
 #include "list_r_conversion.h"
 #include "owenst_asa076.h"
+#include "seeder.h"
 
 using namespace Rcpp;
 
@@ -193,7 +194,7 @@ List run_single_dichotomous(NumericVector model, Eigen::MatrixXd data,
 List run_continuous_single(IntegerVector model, Eigen::MatrixXd Y,
                            Eigen::MatrixXd X, Eigen::MatrixXd prior,
                            NumericVector options, IntegerVector dist_type) {
-
+  Seeder *seeder = Seeder::getInstance();
   bool is_increasing = (bool)options[4];
   // double alpha = (double)options[3];
   double tail_p = (double)options[2];
@@ -315,6 +316,8 @@ List run_continuous_single(IntegerVector model, Eigen::MatrixXd Y,
   {
 #pragma omp sections
     {
+      
+      seeder->setSeed(seeder->currentSeed);
 #pragma omp section
       { estimate_sm_laplace(&anal, result, isFast); }
 

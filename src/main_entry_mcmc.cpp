@@ -56,6 +56,7 @@
 #include "lognormal_HILL_NC.h"
 #include "lognormal_POLYNOMIAL_NC.h"
 #include "lognormal_POWER_NC.h"
+#include "seeder.h"
 
 #include "continuous_clean_aux.h"
 
@@ -139,6 +140,8 @@ Eigen::MatrixXd fix_sample(Eigen::MatrixXd A, dich_model mtype, double max) {
 List run_dichotomous_single_mcmc(NumericVector model, Eigen::MatrixXd Y,
                                  Eigen::MatrixXd D, Eigen::MatrixXd pr,
                                  NumericVector options) {
+  Seeder *seeder = Seeder::getInstance();
+  int seed = seeder->currentSeed;
   dichotomous_analysis mcmcAnal;
   mcmcAnal.BMD_type = eExtraRisk; // (options[0]==1)?eExtraRisk:eAddedRisk;
   mcmcAnal.BMR = options[0];
