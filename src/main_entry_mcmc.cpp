@@ -139,9 +139,8 @@ Eigen::MatrixXd fix_sample(Eigen::MatrixXd A, dich_model mtype, double max) {
 // [[Rcpp::export(".run_dichotomous_single_mcmc")]]
 List run_dichotomous_single_mcmc(NumericVector model, Eigen::MatrixXd Y,
                                  Eigen::MatrixXd D, Eigen::MatrixXd pr,
-                                 NumericVector options) {
-  Seeder *seeder = Seeder::getInstance();
-  int seed = seeder->currentSeed;
+                                 NumericVector options, int seed) {
+  setseedGSL(seed);
   dichotomous_analysis mcmcAnal;
   mcmcAnal.BMD_type = eExtraRisk; // (options[0]==1)?eExtraRisk:eAddedRisk;
   mcmcAnal.BMR = options[0];
@@ -220,7 +219,9 @@ List run_dichotomous_single_mcmc(NumericVector model, Eigen::MatrixXd Y,
 List run_continuous_single_mcmc(NumericVector model, Eigen::MatrixXd Y,
                                 Eigen::MatrixXd D, Eigen::MatrixXd priors,
                                 NumericVector options, bool is_logNormal,
-                                bool suff_stat) {
+                                bool suff_stat, int seed) {
+                                  
+  setseedGSL(seed);
   unsigned int samples = (unsigned int)options[7];
   unsigned int burnin = (unsigned int)options[6];
   double tail_p = (double)options[2];
