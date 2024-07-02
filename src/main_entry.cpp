@@ -96,7 +96,8 @@ double owenst_fn(double x, double fx) { return tfn(x, fx); }
 List run_single_dichotomous(NumericVector model, Eigen::MatrixXd data,
                             Eigen::MatrixXd pr, NumericVector options1,
                             IntegerVector options2, int seed) {
-  setseedGSL(seed);
+  Seeder *seeder = Seeder::getInstance();
+  seeder->setSeed(seed);
   dichotomous_analysis Anal;
   Anal.BMD_type = (options1[0] == 1) ? eExtraRisk : eAddedRisk;
   Anal.BMR = options1[0];
