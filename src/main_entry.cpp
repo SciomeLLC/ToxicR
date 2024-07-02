@@ -197,6 +197,7 @@ List run_continuous_single(IntegerVector model, Eigen::MatrixXd Y,
                            Eigen::MatrixXd X, Eigen::MatrixXd prior,
                            NumericVector options, IntegerVector dist_type, int seed) {
   Seeder *seeder = Seeder::getInstance();
+  seeder->setSeed(seed);
   bool is_increasing = (bool)options[4];
   // double alpha = (double)options[3];
   double tail_p = (double)options[2];
