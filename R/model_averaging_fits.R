@@ -54,7 +54,6 @@ ma_continuous_fit <- function(D, Y, model_list = NA, fit_type = "laplace",
   myD <- Y
   Y <- as.matrix(Y)
   D <- as.matrix(D)
-
   is_neg <- .check_negative_response(Y)
 
   DATA <- cbind(D, Y)
@@ -62,7 +61,6 @@ ma_continuous_fit <- function(D, Y, model_list = NA, fit_type = "laplace",
   Y <- Y[test == TRUE, , drop = F]
   D <- D[test == TRUE, , drop = F]
   DATA <- cbind(D, Y)
-
   current_models <- c("hill", "exp-3", "exp-5", "power", "FUNL", "exp-aerts", "invexp-aerts", 
         "gamma-aerts", "invgamma-aerts", "hill-aerts", "lomax-aerts", "invlomax-aerts", "lognormal-aerts",
         "logskew-aerts", "invlogskew-aerts", "logistic-aerts", "probit-aerts", "LMS", "gamma-efsa")
@@ -184,7 +182,6 @@ ma_continuous_fit <- function(D, Y, model_list = NA, fit_type = "laplace",
     priors[[ii]] <- prior_list[[ii]]$prior
     dlists[ii] <- which(prior_list[[ii]]$dist == current_dists)
   }
-
 
   ###################
   DATA <- cbind(D, Y)

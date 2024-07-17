@@ -319,8 +319,6 @@ List run_continuous_single(IntegerVector model, Eigen::MatrixXd Y,
   {
 #pragma omp sections
     {
-      
-      seeder->setSeed(seeder->currentSeed);
 #pragma omp section
       { estimate_sm_laplace(&anal, result, isFast); }
 

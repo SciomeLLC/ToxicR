@@ -43,6 +43,7 @@
 #include "bmds_entry.h"
 #include "continuous_model_functions.h"
 #include <stdio.h>
+#include "seeder.h"
 
 using namespace Rcpp;
 using namespace std;
@@ -506,7 +507,6 @@ List run_continuous_ma_mcmc(List model_priors, NumericVector model_type,
       anal.sd[i] = Y(i, 2);
     }
   }
-
   estimate_ma_MCMC(&ma_anal, &anal, ma_result, &model_mcmc_info);
 
   List t1 = convert_mcmc_results(&model_mcmc_info);
