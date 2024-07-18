@@ -1,4 +1,5 @@
 ^.*\.Rproj$
+^.*\.Rcheck$
 ^\.DS_Store$
 ^\.(RData|Rhistory|RProj\.user)$
 ^\.gitignore$
@@ -11,6 +12,7 @@
 ^\.dll$
 ^\.github$
 ^\.log$
+^.*\.tar\.gz$
 ^CHANGELOG\.md$
 ^cran-comments\.md$
 ^llvm/
