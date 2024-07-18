@@ -12,7 +12,6 @@
 ^\.dll$
 ^\.github$
 ^\.log$
-^.*\.tar\.gz$
 ^CHANGELOG\.md$
 ^cran-comments\.md$
 ^llvm/
