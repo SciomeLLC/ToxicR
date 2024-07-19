@@ -315,17 +315,15 @@ List run_continuous_single(IntegerVector model, Eigen::MatrixXd Y,
                                   200); // have 200 equally spaced values
   ////////////////////////////////////
   continuous_deviance aod1;
-#pragma omp parallel
+#pragma omp parallel sections
   {
-#pragma omp sections
-    {
 #pragma omp section
       { estimate_sm_laplace(&anal, result, isFast); }
 
 #pragma omp section
       {
 
-        if (anal.disttype == distribution::log_normal) {
+        if (anal2.disttype == distribution::log_normal) {
 
           estimate_log_normal_aod(&anal2, &aod1);
 
@@ -333,7 +331,6 @@ List run_continuous_single(IntegerVector model, Eigen::MatrixXd Y,
           estimate_normal_aod(&anal2, &aod1);
         }
       }
-    }
   }
   continuous_expected_result exp_r;
   exp_r.expected = new double[anal.n];
