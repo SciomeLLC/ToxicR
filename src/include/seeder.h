@@ -46,6 +46,9 @@ public:
       #pragma omp parallel for
       for (int i = 0; i < max_threads; i++) {
         int thread_num = omp_get_thread_num();
+        if (rngs[thread_num]) {
+          gsl_rng_free(rngs[thread_num]);
+        }
         thread_local gsl_rng* r_local = gsl_rng_alloc(T);
         gsl_rng_set(r_local, currentSeed);
         rngs[thread_num] = r_local;
