@@ -5,7 +5,7 @@ on:
     branches: [ "bk_omp" ]
   workflow_dispatch:
   
-permissions:
+permissions: 
   contents: read
 
 jobs:
@@ -16,8 +16,6 @@ jobs:
         include: [
           {os: "ubuntu-latest", r: "release", compiler_version: 15},
           {os: "ubuntu-latest", r: "devel", compiler_version: 15},
-          {os: "windows-latest", r: "release", compiler_version: 15},
-          {os: "windows-latest", r: "devel", compiler_version: 15},
           {os: "macos-latest", r: "release", compiler_version: 15},
           {os: "macos-latest", r: "devel", compiler_version: 15},
           {os: "macos-latest", r: "release", compiler_version: 14},
@@ -52,7 +50,7 @@ jobs:
       - name: Install GSL (macOS)
         if: runner.os == 'macOs'
         run: |
-          brew install gsl
+          brew install gsl openssl
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::rcmdcheck, any::roxygen2
@@ -69,29 +67,17 @@ jobs:
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: latest
+      - name: Setup gcc
+        if: runner.os == 'macOs'
+        run: |
+          xcodebuild -version
       - name: Build and Check ToxicR
         if: runner.os != 'Windows'
         run: |
           R CMD build .
-          file config.log
-          cat config.log
           r_output=$(R CMD build .)
           echo "$r_output"
           package_name=$(echo "$r_output" | sed -n "s/.*building ‘\([^’]*\.tar\.gz\)’.*/\1/p") 
-          echo "$package_name"
-          R CMD check --as-cran --no-manual $package_name
-          file ToxicR.Rcheck/00install.log
-          file ToxicR/ToxicR.Rcheck/00install.log
-          cat ToxicR.Rcheck/00install.log
-          cat ToxicR.Rcheck/00check.log
-        shell: bash
-        working-directory: "."
-      - name: Build and Check ToxicR
-        if: runner.os == 'Windows'
-        run: |
-          r_output=$(R CMD build .)
-          echo "$r_output"
-          package_name=$(echo "$r_output" | sed -n "s/.*building '\([^']*\.tar\.gz\)'.*/\1/p")
           echo "$package_name"
           R CMD check --as-cran --no-manual $package_name
           file ToxicR.Rcheck/00install.log
