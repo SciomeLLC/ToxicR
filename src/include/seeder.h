@@ -3,7 +3,14 @@
 #ifndef SEEDER
 #define SEEDER
 
+#ifdef _OPENMP
 #include "omp.h"
+#else
+  typedef int omp_int_t;
+  inline omp_int_t omp_get_thread_num() { return 0;}
+  inline omp_int_t omp_get_max_threads() { return 1;}
+  inline omp_int_t omp_get_num_threads() { return 1;}
+#endif
 #include <Rcpp.h>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_rng.h>
