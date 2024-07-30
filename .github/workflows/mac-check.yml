@@ -90,7 +90,7 @@ jobs:
       - name: Show output
         if: always()
         run: |
-            cat config.log
+            cat ..Rcheck/config.log
         shell: bash
         working-directory: "."
       # run: |
