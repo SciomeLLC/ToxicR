@@ -78,7 +78,6 @@ jobs:
           R CMD build .
           r_output=$(R CMD build .)
           echo "$r_output"
-          cat config.log
           package_name=$(echo "$r_output" | sed -n "s/.*building ‘\([^’]*\.tar\.gz\)’.*/\1/p") 
           echo "$package_name"
           R CMD check --as-cran --no-manual $package_name
@@ -88,11 +87,13 @@ jobs:
           cat ToxicR.Rcheck/00check.log
         shell: bash
         working-directory: "."
-      # - name: Show testthat output
-      #   if: always()
-      #   run: |
+      name: Show output
+      if: always()
+      run: |
+          cat config.log
+      # run: |
       #     echo ::group::Show testthat output
       #     find check -name 'testthat.Rout*' -exec cat '{}' \; || true
       #     echo ::endgroup::
-      #   shell: bash
-      #   working-directory: "."
+      shell: bash
+      working-directory: "."
