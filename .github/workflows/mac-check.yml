@@ -72,13 +72,13 @@ jobs:
         run: |
           xcodebuild -version
           clang --version
-          gcc --version
       - name: Build and Check ToxicR
         if: runner.os != 'Windows'
         run: |
           R CMD build .
           r_output=$(R CMD build .)
           echo "$r_output"
+          cat config.log
           package_name=$(echo "$r_output" | sed -n "s/.*building ‘\([^’]*\.tar\.gz\)’.*/\1/p") 
           echo "$package_name"
           R CMD check --as-cran --no-manual $package_name
