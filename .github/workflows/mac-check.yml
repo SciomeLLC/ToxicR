@@ -87,13 +87,13 @@ jobs:
           cat ToxicR.Rcheck/00check.log
         shell: bash
         working-directory: "."
-      name: Show output
-      if: always()
-      run: |
-          cat config.log
+      - name: Show output
+        if: always()
+        run: |
+            cat config.log
+        shell: bash
+        working-directory: "."
       # run: |
       #     echo ::group::Show testthat output
       #     find check -name 'testthat.Rout*' -exec cat '{}' \; || true
       #     echo ::endgroup::
-      shell: bash
-      working-directory: "."
