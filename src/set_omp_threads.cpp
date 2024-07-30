@@ -1,10 +1,5 @@
-#ifdef _OPENMP
-  #include<omp.h>
-#else
-  typedef int omp_int_t;
-  inline omp_int_t omp_get_thread_num() { return 0;}
-  inline omp_int_t omp_get_max_threads() { return 1;}
-  inline omp_int_t omp_get_num_threads() { return 1;}
+#ifndef NO_OMP
+  #include <omp.h>
 #endif
 
 #include <Rcpp.h>
@@ -19,6 +14,7 @@ using namespace Rcpp;
 // output: none
 // [[Rcpp::export(".set_threads")]]
 void set_threads(int num_threads) {
+  #ifndef NO_OMP
   if(omp_get_max_threads() > 1){
     if (num_threads > omp_get_num_threads()) {
       Seeder* s = Seeder::getInstance();
@@ -28,4 +24,7 @@ void set_threads(int num_threads) {
   }else{
     Rcout << "OMP will not be used for parallelization.";
   }
+  #else
+  Rcpp::Rcout << "OpenMP not supported on this architecure." << std::endl;
+  #endif
 }
