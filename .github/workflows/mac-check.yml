@@ -18,7 +18,7 @@ jobs:
           {os: "ubuntu-latest", r: "devel", compiler_version: 15},
           {os: "macos-latest", r: "release", compiler_version: 15},
           {os: "macos-latest", r: "devel", compiler_version: 15},
-          {os: "macos-latest", r: "release", compiler_version: 14},
+          {os: "macos-latest-1", r: "release", compiler_version: 14},
         ]
         # os: [ubuntu-latest]
         # r: ['release']
@@ -71,6 +71,8 @@ jobs:
         if: runner.os == 'macOs'
         run: |
           xcodebuild -version
+          clang --version
+          gcc --version
       - name: Build and Check ToxicR
         if: runner.os != 'Windows'
         run: |
