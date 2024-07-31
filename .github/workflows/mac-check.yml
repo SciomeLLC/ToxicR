@@ -55,23 +55,29 @@ jobs:
         with:
           extra-packages: any::rcmdcheck, any::roxygen2
           needs: check
-      - name: Setup compiler
-        if: runner.os == 'macOs'
-        uses: KyleMayes/install-llvm-action@v2
-        with:
-          version: ${{matrix.compiler_version}}
-          env: true
-          directory: ".."
-      - name: Setup Xcode
-        if: runner.os == 'macOs'
-        uses: maxim-lobanov/setup-xcode@v1
-        with:
-          xcode-version: latest
-      - name: Setup gcc
-        if: runner.os == 'macOs'
+      - name: Install mac-r-tools
         run: |
-          xcodebuild -version
-          clang --version
+          install.packages("remotes")
+          remotes::install_github("coatless-mac/macrtools")
+          macrtools::macos_rtools_install()
+        shell: Rscript {0}
+      # - name: Setup compiler
+      #   if: runner.os == 'macOs'
+      #   uses: KyleMayes/install-llvm-action@v2
+      #   with:
+      #     version: ${{matrix.compiler_version}}
+      #     env: true
+      #     directory: ".."
+      # - name: Setup Xcode
+      #   if: runner.os == 'macOs'
+      #   uses: maxim-lobanov/setup-xcode@v1
+      #   with:
+      #     xcode-version: latest
+      # - name: Setup gcc
+      #   if: runner.os == 'macOs'
+      #   run: |
+      #     xcodebuild -version
+      #     clang --version
       - name: Build and Check ToxicR
         if: runner.os != 'Windows'
         run: |
@@ -87,12 +93,12 @@ jobs:
           cat ToxicR.Rcheck/00check.log
         shell: bash
         working-directory: "."
-      - name: Show output
-        if: always()
-        run: |
-            ls -al
-        shell: bash
-        working-directory: "."
+      # - name: Show output
+      #   if: always()
+      #   run: |
+      #       ls -al
+      #   shell: bash
+      #   working-directory: "."
       # run: |
       #     echo ::group::Show testthat output
       #     find check -name 'testthat.Rout*' -exec cat '{}' \; || true
