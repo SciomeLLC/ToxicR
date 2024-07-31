@@ -19,10 +19,6 @@ jobs:
           {os: "macos-latest", r: "release", compiler_version: 15},
           {os: "macos-latest", r: "release", compiler_version: 14},
         ]
-        # os: [ubuntu-latest]
-        # r: ['release']
-        # compiler: ['clang']
-        # compiler_version: [14, 17]
     runs-on: ${{matrix.os}}
     name: ${{ matrix.os }}_${{ matrix.r}}_${{matrix.compiler_version}}
     steps:
@@ -83,13 +79,3 @@ jobs:
           R CMD check --as-cran --no-manual $package_name
         shell: bash
         working-directory: "."
-      # - name: Show output
-      #   if: always()
-      #   run: |
-      #       ls -al
-      #   shell: bash
-      #   working-directory: "."
-      # run: |
-      #     echo ::group::Show testthat output
-      #     find check -name 'testthat.Rout*' -exec cat '{}' \; || true
-      #     echo ::endgroup::
