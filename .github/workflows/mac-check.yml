@@ -16,10 +16,7 @@ jobs:
       fail-fast: false 
       matrix:
         include: [
-          {os: "ubuntu-latest", r: "release", compiler_version: 15},
-          {os: "ubuntu-latest", r: "devel", compiler_version: 15},
           {os: "macos-latest", r: "release", compiler_version: 15},
-          # {os: "macos-latest", r: "devel", compiler_version: 15},
           {os: "macos-latest", r: "release", compiler_version: 14},
         ]
         # os: [ubuntu-latest]
@@ -73,10 +70,6 @@ jobs:
           package_name=$(echo "$r_output" | sed -n "s/.*building ‘\([^’]*\.tar\.gz\)’.*/\1/p") 
           echo "$package_name"
           R CMD check --as-cran --no-manual $package_name
-          file ToxicR.Rcheck/00install.log
-          file ToxicR/ToxicR.Rcheck/00install.log
-          cat ToxicR.Rcheck/00install.log
-          cat ToxicR.Rcheck/00check.log
         shell: bash
         working-directory: "."
       - name: Build and Check ToxicR (MacOs)
