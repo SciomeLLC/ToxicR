@@ -9,6 +9,8 @@ permissions:
 
 jobs:
   cran-check:
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     strategy:
       fail-fast: false 
       matrix:
