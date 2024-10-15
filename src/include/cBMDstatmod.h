@@ -622,6 +622,11 @@ optimizationResult cfindMAX_W_BOUND(cBMDModel<LL, PR> *M, Eigen::MatrixXd start,
       good_opt = false;
       DEBUG_LOG(file, "opt_iter= " << opt_iter
                                    << ", error: invalid arg: " << exc.what());
+    } catch (const std::runtime_error &exc) {
+      good_opt = false;
+      DEBUG_LOG(file,
+                "opt_iter= " << opt_iter << ", general error: " << exc.what());
+      // cout << "Exception!!" << endl;
     } catch (const std::exception &exc) {
       good_opt = false;
       DEBUG_LOG(file,
