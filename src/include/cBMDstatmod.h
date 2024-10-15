@@ -513,16 +513,13 @@ optimizationResult cfindMAX_W_BOUND(cBMDModel<LL, PR> *M, Eigen::MatrixXd start,
   optimizationResult oR;
   double minf = 0;
   nlopt::result result = nlopt::FAILURE;
-  int vecSize = M->nParms() - 1;
-  std::vector<double> x(vecSize); // drop the number of parameters by 1
+  int vecSize = start.rows() - 1;
+  // std::vector<double> x(vecSize); // drop the number of parameters by 1
   std::vector<double> lb(vecSize);
   std::vector<double> ub(vecSize);
   Eigen::MatrixXd datal = M->parmLB();
   Eigen::MatrixXd datau = M->parmUB();
-  lb = std::vector<double>(datal.data(), datal.data() + vecSize);
-  ub = std::vector<double>(datau.data(), datau.data() + vecSize);
-  // Eigen::MatrixXd x = Eigen::MatrixXd::Zero(vecSize, 1); // drop the number
-  // of parameters by 1
+  Eigen::MatrixXd x = Eigen::MatrixXd::Zero(vecSize, 1); // drop the number of parameters by 1
   int count = 0;
   ///////////////////////////////////////////////////////////////////////////////
   // remove the extra parameter from the list
