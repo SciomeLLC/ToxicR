@@ -44,7 +44,7 @@
 #include <gsl/gsl_rng.h>
 #include <nlopt.hpp>
 #include <utility>
-
+#include <algorithm>
 #include <iostream>
 #pragma once
 #ifndef statmodH
@@ -64,6 +64,11 @@ struct optimizationResult {
     return *this;
   }
 };
+
+template <typename T>
+const T& clamp(const T& value, const T& low, const T& high) {
+    return (value < low) ? low : (value > high ? high : value);
+}
 
 template <class LL, class PR> class statModel {
 public:
@@ -527,7 +532,7 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
       // Apply random perturbation and ensure bounds
       for (int iii = 0; iii < M->nParms(); ++iii) {
         child(iii, 0) =
-            std::clamp(child(iii, 0) + 0.2 * std::abs(child(iii, 0)) *
+            clamp(child(iii, 0) + 0.2 * std::abs(child(iii, 0)) *
                                            (2 * seeder->get_uniform() - 1),
                        lb[iii], ub[iii]);
       }
