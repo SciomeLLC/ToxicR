@@ -39,16 +39,22 @@
 #include "binomModels.h"
 #include "log_likelihoods.h"
 #include "seeder.h"
+#include <algorithm>
+#include <cmath>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_rng.h>
+#include <iostream>
 #include <nlopt.hpp>
 <<<<<<< HEAD
 
 =======
 #include <utility>
+<<<<<<< HEAD
 #include <algorithm>
 >>>>>>> 7b1468d (add clamp function for c++11)
 #include <iostream>
+=======
+>>>>>>> 2b825f3 (add clamp function for c++11)
 #pragma once
 #ifndef statmodH
 #define statmodH
@@ -68,8 +74,8 @@ struct optimizationResult {
 };
 
 template <typename T>
-const T& clamp(const T& value, const T& low, const T& high) {
-    return (value < low) ? low : (value > high ? high : value);
+const T &clamp(const T &value, const T &low, const T &high) {
+  return (value < low) ? low : (value > high ? high : value);
 }
 
 template <class LL, class PR> class statModel {
@@ -540,8 +546,8 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
       for (int iii = 0; iii < M->nParms(); ++iii) {
         child(iii, 0) =
             clamp(child(iii, 0) + 0.2 * std::abs(child(iii, 0)) *
-                                           (2 * seeder->get_uniform() - 1),
-                       lb[iii], ub[iii]);
+                                      (2 * seeder->get_uniform() - 1),
+                  lb[iii], ub[iii]);
       }
 
       // Evaluate the new child
