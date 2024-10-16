@@ -42,7 +42,12 @@
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_rng.h>
 #include <nlopt.hpp>
+<<<<<<< HEAD
 
+=======
+#include <utility>
+#include <algorithm>
+>>>>>>> 7b1468d (add clamp function for c++11)
 #include <iostream>
 #pragma once
 #ifndef statmodH
@@ -61,6 +66,11 @@ struct optimizationResult {
     return *this;
   }
 };
+
+template <typename T>
+const T& clamp(const T& value, const T& low, const T& high) {
+    return (value < low) ? low : (value > high ? high : value);
+}
 
 template <class LL, class PR> class statModel {
 public:
@@ -470,8 +480,77 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
     // Ensure bounds
     test = test.cwiseMin(ub_mtx).cwiseMax(lb_mtx);
 
-    if (test(j, 0) > ub[j]) {
-      test(j, 0) = ub[j];
+  // Sort population based on likelihood values (ascending order)
+  std::sort(population_with_scores.begin(), population_with_scores.end(),
+            [](const auto &a, const auto &b) { return a.first < b.first; });
+
+  // Look for invalid entries (those with empty matrices) and remove them
+  auto it_pop = std::remove_if(
+      population_with_scores.begin(), population_with_scores.end(),
+      [](const auto &pair) { return pair.second.size() == 0; });
+  population_with_scores.erase(it_pop, population_with_scores.end());
+
+  if (population.size() <= 25) {
+    // couln't find a good starting point return the starting value
+    // and pray
+    for (int i = 0; i < M->nParms(); i++)
+      x[i] = startV(i, 0);
+    return x;
+  }
+
+  // Now do the Genetic algoritm thing.
+  // Trim population to allow only the fittest to propagate
+  population_with_scores.resize(
+      std::min<int>(population_with_scores.size(), 175));
+
+  // Set genetic algorithm parameters
+  int ngenerations = isBig ? 600 : 450;
+  int ntourny = isBig ? 30 : 20;
+  int tourny_size = isBig ? 40 : 20;
+
+  for (int xx = 0; xx < ngenerations; xx++) {
+    std::vector<std::pair<double, Eigen::MatrixXd>> new_candidates;
+
+    // Tournament selection and evolution
+    for (int ay = 0; ay < ntourny; ++ay) {
+      std::vector<std::pair<double, Eigen::MatrixXd>> cur_tourney(tourny_size);
+      // Select individuals for the tournament
+      for (int z = 0; z < tourny_size; ++z) {
+        int sel = static_cast<int>(seeder->get_uniform() *
+                                   population_with_scores.size());
+        sel =
+            std::min(sel, static_cast<int>(population_with_scores.size()) - 1);
+        cur_tourney[z] = population_with_scores[sel];
+      }
+      // Find the best individual in the tournament
+      auto best = *std::min_element(
+          cur_tourney.begin(), cur_tourney.end(),
+          [](const auto &a, const auto &b) { return a.first < b.first; });
+
+      // Randomly select another individual for differential evolution
+      int idx = 1 + static_cast<int>(seeder->get_uniform() *
+                                     (cur_tourney.size() - 1));
+      Eigen::MatrixXd temp_delta = best.second - cur_tourney[idx].second;
+
+      // Create a new child using differential evolution and perturbation
+      Eigen::MatrixXd child =
+          best.second + 0.8 * temp_delta * (2 * seeder->get_uniform() - 1);
+
+      // Apply random perturbation and ensure bounds
+      for (int iii = 0; iii < M->nParms(); ++iii) {
+        child(iii, 0) =
+            clamp(child(iii, 0) + 0.2 * std::abs(child(iii, 0)) *
+                                           (2 * seeder->get_uniform() - 1),
+                       lb[iii], ub[iii]);
+      }
+
+      // Evaluate the new child
+      double child_l = M->negPenLike(child);
+
+      // Insert the new child if it improves upon the worst in the population
+      if (child_l < population_with_scores.back().first) {
+        new_candidates.push_back({child_l, child});
+      }
     }
     if (test(j, 0) < lb[j]) {
       test(j, 0) = lb[j];
