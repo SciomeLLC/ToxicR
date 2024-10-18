@@ -125,7 +125,7 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
                                    transform = FALSE, BMD_TYPE = NA, threads = 2, seed = 12331){
     Y <- as.matrix(Y) 
     D <- as.matrix(D) 
-    
+    .setseedGSL(seed)
     dis_type = which(distribution  == c("normal","normal-ncv","lognormal"))
     
     if (dis_type == 3){
@@ -355,6 +355,7 @@ single_continuous_fit <- function(D,Y,model_type="hill", fit_type = "laplace",
           dist_type = 2 # normal-ncv
       }
     }
+    
   ##  print(PR)
   # // return(PR)
     if (fit_type == "mcmc"){

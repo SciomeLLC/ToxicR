@@ -41,8 +41,8 @@
 #include "seeder.h"
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_rng.h>
-#include <nlopt.hpp>
 #include <iostream>
+#include <nlopt.hpp>
 #pragma once
 #ifndef statmodH
 #define statmodH
@@ -444,8 +444,8 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
   std::vector<Eigen::MatrixXd> population(NI + 1,
                                           Eigen::MatrixXd(M->nParms(), 1));
   // pre-allocate space for likelihoods and population
-  llist.reserve(NI + 1);
-  population.reserve(NI + 1);
+  llist.resize(NI + 1);
+  population.resize(NI + 1);
 
   double test_l;
   // make sure start value is within our bounds
@@ -478,6 +478,7 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
       population.insert(population.begin() + idx, test);
     }
   }
+
   // look for bad population entries
   population.erase(
       std::remove_if(population.begin(), population.end(),
@@ -603,9 +604,12 @@ optimizationResult findMAP(statModel<LL, PR> *M, Eigen::MatrixXd startV,
                            unsigned int flags = OPTIM_USE_GENETIC |
                                                 OPTIM_USE_SUBPLX) {
   optimizationResult oR;
-  Eigen::MatrixXd temp_data = M->parmLB();
-  std::vector<double> lb(M->parmLB().data(), M->parmLB().data() + M->nParms());
-  std::vector<double> ub(M->parmUB().data(), M->parmUB().data() + M->nParms());
+  // Eigen::MatrixXd temp_data = M->parmLB();
+  Eigen::MatrixXd lbMat = M->parmLB();
+  Eigen::MatrixXd ubMat = M->parmUB();
+
+  std::vector<double> lb(lbMat.data(), lbMat.data() + M->nParms());
+  std::vector<double> ub(ubMat.data(), ubMat.data() + M->nParms());
   std::vector<double> x(startV.rows());
   if (OPTIM_USE_GENETIC & flags) {
     bool op_size = (OPTIM_USE_BIG_GENETIC & flags);

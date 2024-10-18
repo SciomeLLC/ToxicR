@@ -197,7 +197,8 @@ List run_single_dichotomous(NumericVector model, Eigen::MatrixXd data,
 // [[Rcpp::export(".run_continuous_single")]]
 List run_continuous_single(IntegerVector model, Eigen::MatrixXd Y,
                            Eigen::MatrixXd X, Eigen::MatrixXd prior,
-                           NumericVector options, IntegerVector dist_type, int seed) {
+                           NumericVector options, IntegerVector dist_type,
+                           int seed) {
   Seeder *seeder = Seeder::getInstance();
   seeder->setSeed(seed);
   bool is_increasing = (bool)options[4];
@@ -310,30 +311,40 @@ List run_continuous_single(IntegerVector model, Eigen::MatrixXd Y,
   }
 
   ////////////////////////////////////
-
+  Rcpp::Rcout << "startin model res" << std::endl;
   ////////////////////////////////////
   continuous_model_result *result =
       new_continuous_model_result(anal.model, anal.parms,
                                   200); // have 200 equally spaced values
   ////////////////////////////////////
+  
   continuous_deviance aod1;
+#ifndef NO_OMP
 #pragma omp parallel sections
   {
 #pragma omp section
-      { estimate_sm_laplace(&anal, result, isFast); }
+    { estimate_sm_laplace(&anal, result, isFast); }
 
 #pragma omp section
-      {
+    {
 
-        if (anal2.disttype == distribution::log_normal) {
+      if (anal2.disttype == distribution::log_normal) {
 
-          estimate_log_normal_aod(&anal2, &aod1);
+        estimate_log_normal_aod(&anal2, &aod1);
 
-        } else {
-          estimate_normal_aod(&anal2, &aod1);
-        }
+      } else {
+        estimate_normal_aod(&anal2, &aod1);
       }
+    }
   }
+#else
+  estimate_sm_laplace(&anal, result, isFast);
+  if (anal2.disttype == distribution::log_normal) {
+    estimate_log_normal_aod(&anal2, &aod1);
+  } else {
+    estimate_normal_aod(&anal2, &aod1);
+  }
+#endif
   continuous_expected_result exp_r;
   exp_r.expected = new double[anal.n];
   exp_r.n = anal.n;
