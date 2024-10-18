@@ -39,19 +39,16 @@
 #include "binomModels.h"
 #include "log_likelihoods.h"
 #include "seeder.h"
-#include <algorithm>
-#include <cmath>
 #include <gsl/gsl_randist.h>
 #include <gsl/gsl_rng.h>
-#include <iostream>
 #include <nlopt.hpp>
-#include <utility>
+
+#include <iostream>
 #pragma once
 #ifndef statmodH
 #define statmodH
 
 using namespace std;
-
 struct optimizationResult {
   nlopt::result result;
   double functionV;
@@ -64,11 +61,6 @@ struct optimizationResult {
     return *this;
   }
 };
-
-template <typename T>
-const T &_clamp(const T &value, const T &low, const T &high) {
-  return (value < low) ? low : (value > high ? high : value);
-}
 
 template <class LL, class PR> class statModel {
 public:
@@ -394,7 +386,7 @@ Eigen::MatrixXd statModel<LL, PR>::varMatrix(Eigen::MatrixXd theta) {
 //          void    *data     : Extra data needed. In this case, it is a
 //          statModel<LL,PR> object,
 //							   which is used to
-// compute the negative penalized likelihood
+//compute the negative penalized likelihood
 //////////////////////////////////////////////////////////////////
 template <class LL, class PR>
 double neg_pen_likelihood(unsigned n, const double *b, double *grad,
@@ -440,6 +432,7 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
                                  bool isBig = true) {
 
   std::vector<double> x(M->nParms());
+
   int NI;
   if (isBig) {
     NI = 1000; // size of the initial population
@@ -469,9 +462,12 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
 
   population[NI] = startV;
   llist[NI] = M->negPenLike(test);
+
+  //
   // create the initial population of size (NI) random starting points for the
   // genetic algorithm double initial_temp;
   for (int i = 0; i < NI; i++) {
+    // generate new value to be within the specified bounds
     for (int j = 0; j < M->nParms(); j++) {
       test(j, 0) =
           startV(j, 0) + seeder->get_ran_flat(); // random number in the bounds
@@ -508,6 +504,7 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
                              // start over
     }
   }
+
   if (population.size() <= 25) {
     // couln't find a good starting point return the starting value
     // and pray
@@ -515,6 +512,7 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
       x[i] = startV(i, 0);
     return x;
   }
+  //
   // Now do the Genetic algoritm thing.
   // first trim the population to allow only
   // the fittest to procrate
@@ -527,6 +525,7 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
   population.erase(it_pop, population.end());
 
   int ngenerations;
+  ;
   int ntourny;
   int tourny_size;
   if (isBig) {
@@ -538,13 +537,19 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
     ntourny = 20;
     tourny_size = 20;
   }
+
   for (int xx = 0; xx < ngenerations; xx++) {
+
     std::vector<double> tourny_winners;
     std::vector<Eigen::MatrixXd> tourny_vals;
+
     for (int ay = 0; ay < ntourny; ay++) {
+
       std::vector<double> cur_tourny_nll(
           tourny_size, std::numeric_limits<double>::infinity());
       std::vector<Eigen::MatrixXd> cur_tourny_parms(tourny_size, population[0]);
+      // make sure there are no entries in the current tourny.
+
       // select the elements from the population
       for (int z = 0; z < tourny_size; z++) {
         // in each generation there is a tournament
@@ -557,9 +562,11 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
         cur_tourny_nll[z] = it_l[sel];
         cur_tourny_parms[z] = population[sel];
       }
+
       // find the best
       double best_nll = cur_tourny_nll[0];
       Eigen::MatrixXd best_parm = cur_tourny_parms[0];
+
       for (int z = 1; z < tourny_size; z++) {
         if (cur_tourny_nll[z] < best_nll) {
           best_nll = cur_tourny_nll[z];
@@ -569,6 +576,7 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
       // the best is the zero element
       // randomly select another element to find the diference
       bool correctBounds = true;
+
       int idx = (int)(cur_tourny_parms.size() - 1) * seeder->get_uniform() + 1;
       Eigen::MatrixXd temp_delta = best_parm - cur_tourny_parms[idx];
       // Create a new child as a mix between the best and some other
@@ -576,6 +584,7 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
       Eigen::MatrixXd child =
           best_parm + 0.8 * temp_delta * (2 * seeder->get_uniform() - 1);
       correctBounds = true;
+
       for (int iii = 0; iii < M->nParms(); iii++) {
         // perterb the individual values in the child
         child(iii, 0) = child(iii, 0) + 0.2 * abs(child(iii, 0)) *
@@ -585,11 +594,13 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
           break;
         }
       }
+
       if (correctBounds) {
         test_l = M->negPenLike(child);
       } else {
         test_l = std::numeric_limits<double>::infinity();
       }
+
       // put this new child into the population
       bool break_loop = false;
       int S = population.size();
@@ -610,6 +621,7 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
 
     it_l = llist.begin();
     it_pop = population.begin();
+
     if (llist.size() >= 100)
       std::advance(it_l, 100);
     else
@@ -619,14 +631,18 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
       std::advance(it_pop, 100);
     else
       std::advance(it_pop, population.size());
+
     llist.erase(it_l, llist.end());
     population.erase(it_pop, population.end());
   }
+
   if (population.size() > 0) {
     test = population[0]; // the fittest is our starting value
   }
+
   double t1 = M->negPenLike(test);
   double t2 = M->negPenLike(startV);
+
   if (t2 < t1) { // the random search was no better than the first value.
     test = startV;
   }
@@ -640,8 +656,10 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
                     // starting values
     test = startV;
   }
+
   for (int i = 0; i < M->nParms(); i++)
     x[i] = test(i, 0);
+
   for (int i = 0; i < M->nParms(); i++) {
     if (!isnormal(x[i])) {
       x[i] = 0;
@@ -676,15 +694,11 @@ optimizationResult findMAP(statModel<LL, PR> *M, Eigen::MatrixXd startV,
   std::vector<double> x(startV.rows());
   if (OPTIM_USE_GENETIC & flags) {
     bool op_size = (OPTIM_USE_BIG_GENETIC & flags);
-
     try {
+
       x = startValue_F(M, startV, lb, ub, op_size);
+
     } catch (...) {
-      Rcpp::warning(
-          "Unable to compute start value for Fischer scoring algorithm.");
-      for (int i = 0; i < M->nParms(); i++) {
-        x[i] = startV(i, 0);
-      }
     }
   } else {
     for (unsigned int i = 0; i < x.size(); i++) {
@@ -817,8 +831,7 @@ optimizationResult findMAP(statModel<LL, PR> *M, Eigen::MatrixXd startV,
   M->setEST(d);
 
   if (result < 0) {
-    // cerr << __FUNCTION__ << " at line: " << __LINE__ << " result= " <<
-    // result
+    // cerr << __FUNCTION__ << " at line: " << __LINE__ << " result= " << result
     // << endl;
   }
 
