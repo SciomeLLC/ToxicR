@@ -531,8 +531,10 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
       }
 
       // find the best
-      auto min_it = std::min_element(cur_tourny_nll.begin(), cur_tourny_nll.end());
-      Eigen::MatrixXd best_parm = cur_tourny_parms[std::distance(cur_tourny_nll.begin(), min_it)];
+      auto min_it =
+          std::min_element(cur_tourny_nll.begin(), cur_tourny_nll.end());
+      Eigen::MatrixXd best_parm =
+          cur_tourny_parms[std::distance(cur_tourny_nll.begin(), min_it)];
 
       // the best is the zero element
       // randomly select another element to find the diference
@@ -542,7 +544,8 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
       // Create a new child as a mix between the best and some other value.
       Eigen::MatrixXd child =
           best_parm + 0.8 * temp_delta * (2 * seeder->get_uniform() - 1);
-      child.array() += 0.2 * child.array().abs() * (2 * seeder->get_uniform() - 1);
+      child.array() +=
+          0.2 * child.array().abs() * (2 * seeder->get_uniform() - 1);
       // Ensure bounds
       child = child.cwiseMin(ub_mtx).cwiseMax(lb_mtx);
 
@@ -554,7 +557,7 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
         llist.insert(pos, test_l);
         population.insert(population.begin() + idx, child);
       }
-      
+
       // limit population to max_population_size
       if (llist.size() > max_population_size) {
         llist.resize(max_population_size);
@@ -602,24 +605,15 @@ optimizationResult findMAP(statModel<LL, PR> *M, Eigen::MatrixXd startV,
                                                 OPTIM_USE_SUBPLX) {
   optimizationResult oR;
   Eigen::MatrixXd temp_data = M->parmLB();
-  std::vector<double> lb(M->nParms());
-
-  for (int i = 0; i < M->nParms(); i++)
-    lb[i] = temp_data(i, 0);
-  temp_data = M->parmUB();
-
-  std::vector<double> ub(M->nParms());
-
-  for (int i = 0; i < M->nParms(); i++)
-    ub[i] = temp_data(i, 0);
+  std::vector<double> lb(M->parmLB().data(), M->parmLB().data() + M->nParms());
+  std::vector<double> ub(M->parmUB().data(), M->parmUB().data() + M->nParms());
   std::vector<double> x(startV.rows());
   if (OPTIM_USE_GENETIC & flags) {
     bool op_size = (OPTIM_USE_BIG_GENETIC & flags);
     try {
-
       x = startValue_F(M, startV, lb, ub, op_size);
-
-    } catch (...) {
+    } catch (const std::exception &e) {
+      Rcpp::stop("Exception in startValue_F: %s", e.what());
     }
   } else {
     for (unsigned int i = 0; i < x.size(); i++) {
@@ -627,10 +621,8 @@ optimizationResult findMAP(statModel<LL, PR> *M, Eigen::MatrixXd startV,
     }
   }
 
-  // int yy = x.size();
-
   for (int i = 0; i < M->nParms(); i++) {
-    if (!isnormal(x[i])) {
+    if (!std::isfinite(x[i])) {
       x[i] = 0;
     }
   }
@@ -661,13 +653,8 @@ optimizationResult findMAP(statModel<LL, PR> *M, Eigen::MatrixXd startV,
 
     // Ensure that starting values are within bounds
     for (int i = 0; i < M->nParms(); i++) {
-      double temp = x[i];
-      if (temp < lb[i])
-        temp = lb[i];
-      else if (temp > ub[i])
-        temp = ub[i];
-      x[i] = temp;
-    } // end for
+      x[i] = std::min(std::max(x[i], lb[i]), ub[i]);
+    }
 
     switch (opt_iter) {
     case 0:
@@ -737,7 +724,7 @@ optimizationResult findMAP(statModel<LL, PR> *M, Eigen::MatrixXd startV,
                 "opt_iter= " << opt_iter << ", general error: " << exc.what());
       // cout << "???" << endl;
     } catch (...) {
-
+      Rcpp::stop("Unknow exception thrown in findMAP()");
     } // catch
 
     DEBUG_CLOSE_LOG(file);
