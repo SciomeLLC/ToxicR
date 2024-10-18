@@ -385,7 +385,7 @@ Eigen::MatrixXd statModel<LL, PR>::varMatrix(Eigen::MatrixXd theta) {
 //          void    *data     : Extra data needed. In this case, it is a
 //          statModel<LL,PR> object,
 //							   which is used to
-//compute the negative penalized likelihood
+// compute the negative penalized likelihood
 //////////////////////////////////////////////////////////////////
 template <class LL, class PR>
 double neg_pen_likelihood(unsigned n, const double *b, double *grad,
@@ -432,31 +432,18 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
 
   std::vector<double> x(M->nParms());
 
-  int NI;
-  if (isBig) {
-    NI = 1000; // size of the initial population
-  } else {
-    NI = 500;
-  }
-  std::vector<double> llist(
-      NI + 1, std::numeric_limits<double>::infinity()); // List of the
-                                                        // likelihood values;
-  /*for(int j=0; j< llist.size(); j++){
-    llist[j] = std::numeric_limits<double>::infinity(); // initialize everything
-  to infinity
-  }*/
-  std::vector<Eigen::MatrixXd> population(
-      NI + 1); // list of the population parameters
+  int NI = isBig ? 1000 : 500;
+
+  // List of the likelihood values;
+  std::vector<double> llist(NI + 1, std::numeric_limits<double>::infinity());
+  // list of the population parameters
+  std::vector<Eigen::MatrixXd> population(NI + 1,
+                                          Eigen::MatrixXd(M->nParms(), 1));
 
   double test_l;
   // make sure start value is within our bounds
-  for (unsigned int i = 0; i < lb.size(); i++) {
-    if (startV(i, 0) < lb[i] || startV(i, 0) > ub[i]) {
-      startV(i, 0) = lb[i];
-    }
-  }
+  startV = startV.cwiseMin(ub).cwiseMax(lb);
   Eigen::MatrixXd test = startV;
-  // test = M->startValue();
   Seeder *seeder = Seeder::getInstance();
 
   population[NI] = startV;
@@ -468,41 +455,30 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
   for (int i = 0; i < NI; i++) {
     // generate new value to be within the specified bounds
     for (int j = 0; j < M->nParms(); j++) {
-      test(j, 0) =
-          startV(j, 0) + seeder->get_ran_flat(); // random number in the bounds
-
-      if (test(j, 0) > ub[j]) {
-        test(j, 0) = ub[j];
-      }
-      if (test(j, 0) < lb[j]) {
-        test(j, 0) = lb[j];
-      }
+      // random number in the bounds
+      test(j, 0) = startV(j, 0) + seeder->get_ran_flat();
     }
+
+    // Ensure bounds
+    test = test.cwiseMin(ub).cwiseMax(lb);
     test_l = M->negPenLike(test);
     bool break_loop = false;
-    // put the new value in sorted order based upon likelihood
-    // score
-    for (int j = 0; !break_loop && j < NI; j++) {
-      if (test_l < llist[j]) { // this is the first occurance
-        std::vector<double>::iterator it_l = llist.begin();
-        std::vector<Eigen::MatrixXd>::iterator it_pop = population.begin();
 
-        std::advance(it_l, j);
-        std::advance(it_pop, j);
-        llist.insert(it_l, test_l);
-        population.insert(it_pop, test);
-        break_loop = true;
-      }
+    // Insert new population members in sorted order
+    auto pos = std::lower_bound(llist.begin(), llist.end(), test_l);
+    // put the new value in sorted order based upon likelihood score
+    if (pos != llist.end()) {
+      int idx = std::distance(llist.begin(), pos);
+      llist.insert(pos, test_l);
+      population.insert(population.begin() + idx, test);
     }
   }
   // look for bad population entries
-  for (int i = population.size() - 1; i > 1; --i) {
-    if (population[i].size() == 0) {
-      population.erase(population.begin() + i);
-      i = population.size(); // removed the value
-                             // start over
-    }
-  }
+  population.erase(
+      std::remove_if(population.begin(), population.end(),
+                     [](const Eigen::MatrixXd &p) { return p.size() == 0; }),
+      population.end()
+  );
 
   if (population.size() <= 25) {
     // couln't find a good starting point return the starting value
@@ -524,7 +500,6 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
   population.erase(it_pop, population.end());
 
   int ngenerations;
-  ;
   int ntourny;
   int tourny_size;
   if (isBig) {
