@@ -45,16 +45,9 @@
 #include <gsl/gsl_rng.h>
 #include <iostream>
 #include <nlopt.hpp>
-<<<<<<< HEAD
-
-=======
 #include <utility>
-<<<<<<< HEAD
 #include <algorithm>
->>>>>>> 7b1468d (add clamp function for c++11)
 #include <iostream>
-=======
->>>>>>> 2b825f3 (add clamp function for c++11)
 #pragma once
 #ifndef statmodH
 #define statmodH
@@ -448,54 +441,74 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
                                  bool isBig = true) {
 
   std::vector<double> x(M->nParms());
-
-  int NI = isBig ? 1000 : 500;
-  int max_population_size = 100;
-
-  // Convert std::vector to Eigen::MatrixXd
-  Eigen::MatrixXd lb_mtx = Eigen::Map<Eigen::MatrixXd>(lb.data(), lb.size(), 1);
-  Eigen::MatrixXd ub_mtx = Eigen::Map<Eigen::MatrixXd>(ub.data(), ub.size(), 1);
-  // List of the likelihood values;
-  std::vector<double> llist(NI + 1, std::numeric_limits<double>::infinity());
-  // list of the population parameters
-  std::vector<Eigen::MatrixXd> population(NI + 1,
-                                          Eigen::MatrixXd(M->nParms(), 1));
-  // pre-allocate space for likelihoods and population
-  llist.reserve(NI + 1);
-  population.reserve(NI + 1);
+  int NI;
+  if (isBig) {
+    NI = 1000; // size of the initial population
+  } else {
+    NI = 500;
+  }
+  std::vector<double> llist(
+      NI + 1, std::numeric_limits<double>::infinity()); // List of the
+                                                        // likelihood values;
+  /*for(int j=0; j< llist.size(); j++){
+    llist[j] = std::numeric_limits<double>::infinity(); // initialize everything
+  to infinity
+  }*/
+  std::vector<Eigen::MatrixXd> population(
+      NI + 1); // list of the population parameters
 
   double test_l;
   // make sure start value is within our bounds
-  startV = startV.cwiseMin(ub_mtx).cwiseMax(lb_mtx);
+  for (unsigned int i = 0; i < lb.size(); i++) {
+    if (startV(i, 0) < lb[i] || startV(i, 0) > ub[i]) {
+      startV(i, 0) = lb[i];
+    }
+  }
   Eigen::MatrixXd test = startV;
   // test = M->startValue();
   Seeder *seeder = Seeder::getInstance();
 
   population[NI] = startV;
   llist[NI] = M->negPenLike(test);
-
-  //
   // create the initial population of size (NI) random starting points for the
   // genetic algorithm double initial_temp;
   for (int i = 0; i < NI; i++) {
-    // generate new values
     for (int j = 0; j < M->nParms(); j++) {
-      // random number in the bounds
-      test(j, 0) = startV(j, 0) + seeder->get_ran_flat();
+      test(j, 0) =
+          startV(j, 0) + seeder->get_ran_flat(); // random number in the bounds
+
+      if (test(j, 0) > ub[j]) {
+        test(j, 0) = ub[j];
+      }
+      if (test(j, 0) < lb[j]) {
+        test(j, 0) = lb[j];
+      }
     }
-    // Ensure bounds
-    test = test.cwiseMin(ub_mtx).cwiseMax(lb_mtx);
+    test_l = M->negPenLike(test);
+    bool break_loop = false;
+    // put the new value in sorted order based upon likelihood
+    // score
+    for (int j = 0; !break_loop && j < NI; j++) {
+      if (test_l < llist[j]) { // this is the first occurance
+        std::vector<double>::iterator it_l = llist.begin();
+        std::vector<Eigen::MatrixXd>::iterator it_pop = population.begin();
 
-  // Sort population based on likelihood values (ascending order)
-  std::sort(population_with_scores.begin(), population_with_scores.end(),
-            [](const auto &a, const auto &b) { return a.first < b.first; });
-
-  // Look for invalid entries (those with empty matrices) and remove them
-  auto it_pop = std::remove_if(
-      population_with_scores.begin(), population_with_scores.end(),
-      [](const auto &pair) { return pair.second.size() == 0; });
-  population_with_scores.erase(it_pop, population_with_scores.end());
-
+        std::advance(it_l, j);
+        std::advance(it_pop, j);
+        llist.insert(it_l, test_l);
+        population.insert(it_pop, test);
+        break_loop = true;
+      }
+    }
+  }
+  // look for bad population entries
+  for (int i = population.size() - 1; i > 1; --i) {
+    if (population[i].size() == 0) {
+      population.erase(population.begin() + i);
+      i = population.size(); // removed the value
+                             // start over
+    }
+  }
   if (population.size() <= 25) {
     // couln't find a good starting point return the starting value
     // and pray
@@ -503,87 +516,138 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
       x[i] = startV(i, 0);
     return x;
   }
-
   // Now do the Genetic algoritm thing.
-  // Trim population to allow only the fittest to propagate
-  population_with_scores.resize(
-      std::min<int>(population_with_scores.size(), 175));
+  // first trim the population to allow only
+  // the fittest to procrate
+  std::vector<double>::iterator it_l = llist.begin();
+  std::vector<Eigen::MatrixXd>::iterator it_pop = population.begin();
+  int tmp = std::min<int>(population.size(), 175);
+  std::advance(it_l, tmp);
+  std::advance(it_pop, tmp);
+  llist.erase(it_l, llist.end());
+  population.erase(it_pop, population.end());
 
-  // Set genetic algorithm parameters
-  int ngenerations = isBig ? 600 : 450;
-  int ntourny = isBig ? 30 : 20;
-  int tourny_size = isBig ? 40 : 20;
-
+  int ngenerations;
+  int ntourny;
+  int tourny_size;
+  if (isBig) {
+    ngenerations = 600;
+    ntourny = 30;
+    tourny_size = 40;
+  } else {
+    ngenerations = 450;
+    ntourny = 20;
+    tourny_size = 20;
+  }
   for (int xx = 0; xx < ngenerations; xx++) {
-    std::vector<std::pair<double, Eigen::MatrixXd>> new_candidates;
-
-    // Tournament selection and evolution
-    for (int ay = 0; ay < ntourny; ++ay) {
-      std::vector<std::pair<double, Eigen::MatrixXd>> cur_tourney(tourny_size);
-      // Select individuals for the tournament
-      for (int z = 0; z < tourny_size; ++z) {
-        int sel = static_cast<int>(seeder->get_uniform() *
-                                   population_with_scores.size());
-        sel =
-            std::min(sel, static_cast<int>(population_with_scores.size()) - 1);
-        cur_tourney[z] = population_with_scores[sel];
+    std::vector<double> tourny_winners;
+    std::vector<Eigen::MatrixXd> tourny_vals;
+    for (int ay = 0; ay < ntourny; ay++) {
+      std::vector<double> cur_tourny_nll(
+          tourny_size, std::numeric_limits<double>::infinity());
+      std::vector<Eigen::MatrixXd> cur_tourny_parms(tourny_size, population[0]);
+      // select the elements from the population
+      for (int z = 0; z < tourny_size; z++) {
+        // in each generation there is a tournament
+        // find the best individual out of tourny_size this individual is:
+        // randomly mutatied and differentially evolved based upon the given
+        // individuals in the tourny.
+        int sel = (int)(population.size() *
+                        seeder->get_uniform()); // choose which element in the
+                                                // population
+        cur_tourny_nll[z] = it_l[sel];
+        cur_tourny_parms[z] = population[sel];
       }
-      // Find the best individual in the tournament
-      auto best = *std::min_element(
-          cur_tourney.begin(), cur_tourney.end(),
-          [](const auto &a, const auto &b) { return a.first < b.first; });
-
-      // Randomly select another individual for differential evolution
-      int idx = 1 + static_cast<int>(seeder->get_uniform() *
-                                     (cur_tourney.size() - 1));
-      Eigen::MatrixXd temp_delta = best.second - cur_tourney[idx].second;
-
-      // Create a new child using differential evolution and perturbation
+      // find the best
+      double best_nll = cur_tourny_nll[0];
+      Eigen::MatrixXd best_parm = cur_tourny_parms[0];
+      for (int z = 1; z < tourny_size; z++) {
+        if (cur_tourny_nll[z] < best_nll) {
+          best_nll = cur_tourny_nll[z];
+          best_parm = cur_tourny_parms[0];
+        }
+      }
+      // the best is the zero element
+      // randomly select another element to find the diference
+      bool correctBounds = true;
+      int idx = (int)(cur_tourny_parms.size() - 1) * seeder->get_uniform() + 1;
+      Eigen::MatrixXd temp_delta = best_parm - cur_tourny_parms[idx];
+      // Create a new child as a mix between the best and some other
+      // value.
       Eigen::MatrixXd child =
-          best.second + 0.8 * temp_delta * (2 * seeder->get_uniform() - 1);
-
-      // Apply random perturbation and ensure bounds
-      for (int iii = 0; iii < M->nParms(); ++iii) {
-        child(iii, 0) =
-            _clamp(child(iii, 0) + 0.2 * std::abs(child(iii, 0)) *
-                                      (2 * seeder->get_uniform() - 1),
-                  lb[iii], ub[iii]);
+          best_parm + 0.8 * temp_delta * (2 * seeder->get_uniform() - 1);
+      correctBounds = true;
+      for (int iii = 0; iii < M->nParms(); iii++) {
+        // perterb the individual values in the child
+        child(iii, 0) = child(iii, 0) + 0.2 * abs(child(iii, 0)) *
+                                            (2 * seeder->get_uniform() - 1);
+        if (lb[iii] > child(iii, 0) || ub[iii] < child(iii, 0)) {
+          correctBounds = false;
+          break;
+        }
       }
+      if (correctBounds) {
+        test_l = M->negPenLike(child);
+      } else {
+        test_l = std::numeric_limits<double>::infinity();
+      }
+      // put this new child into the population
+      bool break_loop = false;
+      int S = population.size();
 
-      // Evaluate the new child
-      double child_l = M->negPenLike(child);
+      for (int j = 0; !break_loop && j < S; j++) {
+        if (test_l < llist[j]) { // this is the first occurance
+          std::vector<double>::iterator it_l = llist.begin();
+          std::vector<Eigen::MatrixXd>::iterator it_pop = population.begin();
 
-      // Insert the new child if it improves upon the worst in the population
-      if (child_l < population_with_scores.back().first) {
-        new_candidates.push_back({child_l, child});
+          std::advance(it_l, j);
+          std::advance(it_pop, j);
+          llist.insert(it_l, test_l);
+          population.insert(it_pop, child);
+          break_loop = true;
+        }
       }
     }
-    if (test(j, 0) < lb[j]) {
-      test(j, 0) = lb[j];
+
+    it_l = llist.begin();
+    it_pop = population.begin();
+    if (llist.size() >= 100)
+      std::advance(it_l, 100);
+    else
+      std::advance(it_l, llist.size());
+
+    if (population.size() >= 100)
+      std::advance(it_pop, 100);
+    else
+      std::advance(it_pop, population.size());
+    llist.erase(it_l, llist.end());
+    population.erase(it_pop, population.end());
+  }
+  if (population.size() > 0) {
+    test = population[0]; // the fittest is our starting value
+  }
+  double t1 = M->negPenLike(test);
+  double t2 = M->negPenLike(startV);
+  if (t2 < t1) { // the random search was no better than the first value.
+    test = startV;
+  }
+  bool found_nans = false;
+  for (int i = 0; i < M->nParms(); i++) {
+    if (isnan(test(i, 0))) {
+      found_nans = true;
     }
   }
-  test_l = M->negPenLike(test);
-  // Insert new population members in sorted order
-  auto pos = std::lower_bound(llist.begin(), llist.end(), test_l);
-  // put the new value in sorted order based upon likelihood score
-  if (pos != llist.end()) {
-    int idx = std::distance(llist.begin(), pos);
-    llist.insert(pos, test_l);
-    population.insert(population.begin() + idx, test);
+  if (found_nans) { // something really messed up revert to initial
+                    // starting values
+    test = startV;
   }
-}
-// look for bad population entries
-population.erase(std::remove_if(population.begin(), population.end(),
-                                [](const Eigen::MatrixXd &p) {
-                                  return p.size() == 0;
-                                }),
-                 population.end());
-
-if (population.size() <= 25) {
-  // couln't find a good starting point return the starting value
-  // and pray
   for (int i = 0; i < M->nParms(); i++)
-    x[i] = startV(i, 0);
+    x[i] = test(i, 0);
+  for (int i = 0; i < M->nParms(); i++) {
+    if (!isnormal(x[i])) {
+      x[i] = 0;
+    }
+  }
   return x;
 }
 //
@@ -834,7 +898,8 @@ optimizationResult findMAP(statModel<LL, PR> *M, Eigen::MatrixXd startV,
   M->setEST(d);
 
   if (result < 0) {
-    // cerr << __FUNCTION__ << " at line: " << __LINE__ << " result= " << result
+    // cerr << __FUNCTION__ << " at line: " << __LINE__ << " result= " <<
+    // result
     // << endl;
   }
 
