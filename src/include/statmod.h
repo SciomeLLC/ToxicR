@@ -386,7 +386,7 @@ Eigen::MatrixXd statModel<LL, PR>::varMatrix(Eigen::MatrixXd theta) {
 //          void    *data     : Extra data needed. In this case, it is a
 //          statModel<LL,PR> object,
 //							   which is used to
-// compute the negative penalized likelihood
+//compute the negative penalized likelihood
 //////////////////////////////////////////////////////////////////
 template <class LL, class PR>
 double neg_pen_likelihood(unsigned n, const double *b, double *grad,
@@ -433,6 +433,7 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
 
   std::vector<double> x(M->nParms());
 
+<<<<<<< HEAD
   int NI = isBig ? 1000 : 500;
   int max_population_size = 100;
 
@@ -451,7 +452,33 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
   double test_l;
   // make sure start value is within our bounds
   startV = startV.cwiseMin(ub_mtx).cwiseMax(lb_mtx);
+=======
+  int NI;
+  if (isBig) {
+    NI = 1000; // size of the initial population
+  } else {
+    NI = 500;
+  }
+  std::vector<double> llist(
+      NI + 1, std::numeric_limits<double>::infinity()); // List of the
+                                                        // likelihood values;
+  /*for(int j=0; j< llist.size(); j++){
+    llist[j] = std::numeric_limits<double>::infinity(); // initialize everything
+  to infinity
+  }*/
+  std::vector<Eigen::MatrixXd> population(
+      NI + 1); // list of the population parameters
+
+  double test_l;
+  // make sure start value is within our bounds
+  for (unsigned int i = 0; i < lb.size(); i++) {
+    if (startV(i, 0) < lb[i] || startV(i, 0) > ub[i]) {
+      startV(i, 0) = lb[i];
+    }
+  }
+>>>>>>> eec0f70 (Revert "Better handling of seeder class for parallel execution. Added rhub actions to test on all OS and configurations.")
   Eigen::MatrixXd test = startV;
+  // test = M->startValue();
   Seeder *seeder = Seeder::getInstance();
 
   population[NI] = startV;
@@ -461,6 +488,7 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
   // create the initial population of size (NI) random starting points for the
   // genetic algorithm double initial_temp;
   for (int i = 0; i < NI; i++) {
+<<<<<<< HEAD
     // generate new values
     for (int j = 0; j < M->nParms(); j++) {
       // random number in the bounds
@@ -468,8 +496,22 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
     }
     // Ensure bounds
     test = test.cwiseMin(ub_mtx).cwiseMax(lb_mtx);
+=======
+    // generate new value to be within the specified bounds
+    for (int j = 0; j < M->nParms(); j++) {
+      test(j, 0) =
+          startV(j, 0) + seeder->get_ran_flat(); // random number in the bounds
+>>>>>>> eec0f70 (Revert "Better handling of seeder class for parallel execution. Added rhub actions to test on all OS and configurations.")
 
+      if (test(j, 0) > ub[j]) {
+        test(j, 0) = ub[j];
+      }
+      if (test(j, 0) < lb[j]) {
+        test(j, 0) = lb[j];
+      }
+    }
     test_l = M->negPenLike(test);
+<<<<<<< HEAD
     // Insert new population members in sorted order
     auto pos = std::lower_bound(llist.begin(), llist.end(), test_l);
     // put the new value in sorted order based upon likelihood score
@@ -477,6 +519,30 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
       int idx = std::distance(llist.begin(), pos);
       llist.insert(pos, test_l);
       population.insert(population.begin() + idx, test);
+=======
+    bool break_loop = false;
+    // put the new value in sorted order based upon likelihood
+    // score
+    for (int j = 0; !break_loop && j < NI; j++) {
+      if (test_l < llist[j]) { // this is the first occurance
+        std::vector<double>::iterator it_l = llist.begin();
+        std::vector<Eigen::MatrixXd>::iterator it_pop = population.begin();
+
+        std::advance(it_l, j);
+        std::advance(it_pop, j);
+        llist.insert(it_l, test_l);
+        population.insert(it_pop, test);
+        break_loop = true;
+      }
+    }
+  }
+  // look for bad population entries
+  for (int i = population.size() - 1; i > 1; --i) {
+    if (population[i].size() == 0) {
+      population.erase(population.begin() + i);
+      i = population.size(); // removed the value
+                             // start over
+>>>>>>> eec0f70 (Revert "Better handling of seeder class for parallel execution. Added rhub actions to test on all OS and configurations.")
     }
   }
   // look for bad population entries
@@ -501,9 +567,25 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
   llist.resize(max_population_size);
   population.resize(max_population_size);
 
+<<<<<<< HEAD
   int ngenerations = isBig ? 600 : 450;
   int ntourny = isBig ? 30 : 20;
   int tourny_size = isBig ? 40 : 20;
+=======
+  int ngenerations;
+  ;
+  int ntourny;
+  int tourny_size;
+  if (isBig) {
+    ngenerations = 600;
+    ntourny = 30;
+    tourny_size = 40;
+  } else {
+    ngenerations = 450;
+    ntourny = 20;
+    tourny_size = 20;
+  }
+>>>>>>> eec0f70 (Revert "Better handling of seeder class for parallel execution. Added rhub actions to test on all OS and configurations.")
 
   for (int xx = 0; xx < ngenerations; xx++) {
 
@@ -523,10 +605,17 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
         // find the best individual out of tourny_size this individual is:
         // randomly mutatied and differentially evolved based upon the given
         // individuals in the tourny.
+<<<<<<< HEAD
 
         // choose which element in the population
         int sel = (int)(population.size() * seeder->get_uniform());
         cur_tourny_nll[z] = llist[sel];
+=======
+        int sel = (int)(population.size() *
+                        seeder->get_uniform()); // choose which element in the
+                                                // population
+        cur_tourny_nll[z] = it_l[sel];
+>>>>>>> eec0f70 (Revert "Better handling of seeder class for parallel execution. Added rhub actions to test on all OS and configurations.")
         cur_tourny_parms[z] = population[sel];
       }
 
@@ -558,12 +647,54 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
         population.insert(population.begin() + idx, child);
       }
 
+<<<<<<< HEAD
       // limit population to max_population_size
       if (llist.size() > max_population_size) {
         llist.resize(max_population_size);
         population.resize(max_population_size);
       }
     }
+=======
+      if (correctBounds) {
+        test_l = M->negPenLike(child);
+      } else {
+        test_l = std::numeric_limits<double>::infinity();
+      }
+
+      // put this new child into the population
+      bool break_loop = false;
+      int S = population.size();
+
+      for (int j = 0; !break_loop && j < S; j++) {
+        if (test_l < llist[j]) { // this is the first occurance
+          std::vector<double>::iterator it_l = llist.begin();
+          std::vector<Eigen::MatrixXd>::iterator it_pop = population.begin();
+
+          std::advance(it_l, j);
+          std::advance(it_pop, j);
+          llist.insert(it_l, test_l);
+          population.insert(it_pop, child);
+          break_loop = true;
+        }
+      }
+    }
+
+    it_l = llist.begin();
+    it_pop = population.begin();
+
+    if (llist.size() >= 100)
+      std::advance(it_l, 100);
+    else
+      std::advance(it_l, llist.size());
+
+    if (population.size() >= 100)
+      std::advance(it_pop, 100);
+    else
+      std::advance(it_pop, population.size());
+
+    llist.erase(it_l, llist.end());
+    population.erase(it_pop, population.end());
+>>>>>>> eec0f70 (Revert "Better handling of seeder class for parallel execution. Added rhub actions to test on all OS and configurations.")
   }
 
   if (population.size() > 0) {
@@ -611,9 +742,15 @@ optimizationResult findMAP(statModel<LL, PR> *M, Eigen::MatrixXd startV,
   if (OPTIM_USE_GENETIC & flags) {
     bool op_size = (OPTIM_USE_BIG_GENETIC & flags);
     try {
+
       x = startValue_F(M, startV, lb, ub, op_size);
+<<<<<<< HEAD
     } catch (const std::exception &e) {
       Rcpp::stop("Exception in startValue_F: %s", e.what());
+=======
+
+    } catch (...) {
+>>>>>>> eec0f70 (Revert "Better handling of seeder class for parallel execution. Added rhub actions to test on all OS and configurations.")
     }
   } else {
     for (unsigned int i = 0; i < x.size(); i++) {

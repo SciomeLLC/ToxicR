@@ -586,23 +586,22 @@ optimizationResult cfindMAX_W_BOUND(cBMDModel<LL, PR> *M, Eigen::MatrixXd start,
 
       switch (opt_iter) {
       case 0:
+        // fastest algorithm first
+        //				cout << "huh1";
         opt_iter++;
-        result =
-            opt2.optimize(x, minf); // fastest algorithm first
-                                    //				cout << "huh1";
+        result = opt2.optimize(x, minf);
         break;
       case 1:
+        // second fastest algorithm next
+        //				cout << "huh2";
         opt_iter++;
-        result =
-            opt3.optimize(x, minf); // second fastest algorithm next
-                                    //				cout << "huh2";
+        result = opt3.optimize(x, minf);
         break;
       default:
+        // most stable one third -- but slower
+        //				cout << "huh3 " << result;
         opt_iter++;
-        result = opt.optimize(
-            x,
-            minf); // most stable one third -- but slower
-                   //				cout << "huh3 " << result;
+        result = opt.optimize(x, minf);
       }
       // file << "result= " << result << ", minf= " << minf << endl;
       // flush(file);
