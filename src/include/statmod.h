@@ -386,7 +386,7 @@ Eigen::MatrixXd statModel<LL, PR>::varMatrix(Eigen::MatrixXd theta) {
 //          void    *data     : Extra data needed. In this case, it is a
 //          statModel<LL,PR> object,
 //							   which is used to
-// compute the negative penalized likelihood
+//compute the negative penalized likelihood
 //////////////////////////////////////////////////////////////////
 template <class LL, class PR>
 double neg_pen_likelihood(unsigned n, const double *b, double *grad,
@@ -611,6 +611,7 @@ optimizationResult findMAP(statModel<LL, PR> *M, Eigen::MatrixXd startV,
   if (OPTIM_USE_GENETIC & flags) {
     bool op_size = (OPTIM_USE_BIG_GENETIC & flags);
     try {
+
       x = startValue_F(M, startV, lb, ub, op_size);
     } catch (const std::exception &e) {
       Rcpp::stop("Exception in startValue_F: %s", e.what());
