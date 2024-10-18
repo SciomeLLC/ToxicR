@@ -542,7 +542,7 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
       // Create a new child as a mix between the best and some other value.
       Eigen::MatrixXd child =
           best_parm + 0.8 * temp_delta * (2 * seeder->get_uniform() - 1);
-      child = child.array() + (0.2 * child.array().abs() * (2 * seeder->get_uniform() - 1)).matrix();
+      child.array() += 0.2 * child.array().abs() * (2 * seeder->get_uniform() - 1);
       // Ensure bounds
       child = child.cwiseMin(ub_mtx).cwiseMax(lb_mtx);
 
