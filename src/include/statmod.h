@@ -434,6 +434,9 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
 
   int NI = isBig ? 1000 : 500;
 
+  // Convert std::vector to Eigen::MatrixXd
+  Eigen::MatrixXd lb_mtx = Eigen::Map<Eigen::MatrixXd>(lb.data(), lb.size(), 1);
+  Eigen::MatrixXd ub_mtx = Eigen::Map<Eigen::MatrixXd>(ub.data(), ub.size(), 1);
   // List of the likelihood values;
   std::vector<double> llist(NI + 1, std::numeric_limits<double>::infinity());
   // list of the population parameters
@@ -442,7 +445,7 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
 
   double test_l;
   // make sure start value is within our bounds
-  startV = startV.cwiseMin(ub).cwiseMax(lb);
+  startV = startV.cwiseMin(ub_mtx).cwiseMax(lb_mtx);
   Eigen::MatrixXd test = startV;
   Seeder *seeder = Seeder::getInstance();
 
@@ -460,7 +463,7 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
     }
 
     // Ensure bounds
-    test = test.cwiseMin(ub).cwiseMax(lb);
+    test = test.cwiseMin(ub_mtx).cwiseMax(lb_mtx);
     test_l = M->negPenLike(test);
     bool break_loop = false;
 
