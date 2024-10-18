@@ -530,8 +530,10 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
       }
 
       // find the best
-      auto min_it = std::min_element(cur_tourny_nll.begin(), cur_tourny_nll.end());
-      Eigen::MatrixXd best_parm = cur_tourny_parms[std::distance(cur_tourny_nll.begin(), min_it)];
+      auto min_it =
+          std::min_element(cur_tourny_nll.begin(), cur_tourny_nll.end());
+      Eigen::MatrixXd best_parm =
+          cur_tourny_parms[std::distance(cur_tourny_nll.begin(), min_it)];
 
       // the best is the zero element
       // randomly select another element to find the diference
@@ -541,7 +543,8 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
       // Create a new child as a mix between the best and some other value.
       Eigen::MatrixXd child =
           best_parm + 0.8 * temp_delta * (2 * seeder->get_uniform() - 1);
-      child.array() += 0.2 * child.array().abs() * (2 * seeder->get_uniform() - 1);
+      child.array() +=
+          0.2 * child.array().abs() * (2 * seeder->get_uniform() - 1);
       // Ensure bounds
       child = child.cwiseMin(ub_mtx).cwiseMax(lb_mtx);
 
@@ -553,7 +556,7 @@ std::vector<double> startValue_F(statModel<LL, PR> *M, Eigen::MatrixXd startV,
         llist.insert(pos, test_l);
         population.insert(population.begin() + idx, child);
       }
-      
+
       // limit population to max_population_size
       if (llist.size() > max_population_size) {
         llist.resize(max_population_size);
@@ -706,10 +709,9 @@ optimizationResult findMAP(statModel<LL, PR> *M, Eigen::MatrixXd startV,
   if (OPTIM_USE_GENETIC & flags) {
     bool op_size = (OPTIM_USE_BIG_GENETIC & flags);
     try {
-
       x = startValue_F(M, startV, lb, ub, op_size);
-
-    } catch (...) {
+    } catch (const std::exception &e) {
+      Rcpp::stop("Exception in startValue_F: %s", e.what());
     }
   } else {
     for (unsigned int i = 0; i < x.size(); i++) {
