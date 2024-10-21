@@ -4217,7 +4217,6 @@ void estimate_ma_MCMC(continuousMA_analysis *MA, continuous_analysis *CA,
 void estimate_sm_laplace(continuous_analysis *CA, continuous_model_result *res,
                          bool isFast) {
   // standardize the data
-  Rcpp::Rcout << "estimating sm laplace" << std::endl;
   int n_rows = CA->n;
   int n_cols = CA->suff_stat ? 3 : 1;
   bool tempsa = CA->suff_stat;
@@ -4314,7 +4313,6 @@ void estimate_sm_laplace(continuous_analysis *CA, continuous_model_result *res,
     }
   }
 
-  Rcpp::Rcout << "initializing model - sm laplace" << std::endl;
   Eigen::MatrixXd temp_init = initialize_model(
       Y_N, Y_LN, X, tprior, (distribution)CA->disttype, CA->model);
 
@@ -4337,22 +4335,18 @@ void estimate_sm_laplace(continuous_analysis *CA, continuous_model_result *res,
 
   case cont_model::hill:
 
-    Rcpp::Rcout << "hill model - sm laplace" << std::endl;
     if (CA->disttype == distribution::log_normal) {
-      Rcpp::Rcout << "hill model log normal - sm laplace" << std::endl;
       init_opt = bmd_continuous_optimization<lognormalHILL_BMD_NC, IDPrior>(
           Y_LN, X, tprior, fixedB, fixedV,
           CA->disttype != distribution::normal_ncv, CA->isIncreasing,
           temp_init);
     } else {
-      Rcpp::Rcout << "hill model normal - sm laplace" << std::endl;
       init_opt = bmd_continuous_optimization<normalHILL_BMD_NC, IDPrior>(
           Y_N, X, tprior, fixedB, fixedV,
           CA->disttype != distribution::normal_ncv, CA->isIncreasing,
           temp_init);
     }
-    
-      Rcpp::Rcout << "rescale hill model normal - sm laplace" << std::endl;
+
     RescaleContinuousModel<IDPrior>((cont_model)CA->model, &tprior, &init_opt,
                                     1.0, divisor, CA->isIncreasing,
                                     CA->disttype == distribution::log_normal,
@@ -5271,7 +5265,6 @@ void estimate_sm_mcmc(continuous_analysis *CA, continuous_model_result *res,
  */
 void estimate_log_normal_aod(continuous_analysis *CA,
                              continuous_deviance *aod) {
-
   // standardize the data
   int n_rows = CA->n;
   int n_cols = CA->suff_stat ? 3 : 1;
@@ -5309,15 +5302,14 @@ void estimate_log_normal_aod(continuous_analysis *CA,
     aod->A1 = std::numeric_limits<double>::infinity();
     aod->A2 = std::numeric_limits<double>::infinity();
     aod->A3 = std::numeric_limits<double>::infinity();
-    return;
   } else {
     Y_LN = SSTAT_LN;
     Eigen::MatrixXd temp = Y_LN.col(2);
     Y_LN.col(2) = Y_LN.col(1);
     Y_LN.col(1) = temp;
     log_normal_AOD_fits(Y_LN, UX, can_be_suff, aod);
-    return;
   }
+  return;
 }
 
 /*
@@ -5366,16 +5358,15 @@ void estimate_normal_aod(continuous_analysis *CA, continuous_deviance *aod) {
     aod->A1 = std::numeric_limits<double>::infinity();
     aod->A2 = std::numeric_limits<double>::infinity();
     aod->A3 = std::numeric_limits<double>::infinity();
-
-    return;
   } else {
     Y_N = SSTAT;
     Eigen::MatrixXd temp = Y_N.col(2);
     Y_N.col(2) = Y_N.col(1);
     Y_N.col(1) = temp;
     normal_AOD_fits(Y_N, UX, can_be_suff, aod);
-    return;
   }
+
+  return;
 }
 
 void estimate_normal_variance(continuous_analysis *CA, double *v_c,

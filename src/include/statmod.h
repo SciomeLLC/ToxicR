@@ -607,7 +607,6 @@ optimizationResult findMAP(statModel<LL, PR> *M, Eigen::MatrixXd startV,
   // Eigen::MatrixXd temp_data = M->parmLB();
   Eigen::MatrixXd lbMat = M->parmLB();
   Eigen::MatrixXd ubMat = M->parmUB();
-
   std::vector<double> lb(lbMat.data(), lbMat.data() + M->nParms());
   std::vector<double> ub(ubMat.data(), ubMat.data() + M->nParms());
   std::vector<double> x(startV.rows());
@@ -647,6 +646,7 @@ optimizationResult findMAP(statModel<LL, PR> *M, Eigen::MatrixXd startV,
   nlopt::opt opt5(nlopt::LD_SLSQP, M->nParms());
 
   nlopt::opt *opt_ptr;
+  Rcpp::Rcout << "prepped nlopt" << std::endl;
 
   int opt_iter;
   // look at 5 optimization algorithms :-)
@@ -709,25 +709,29 @@ optimizationResult findMAP(statModel<LL, PR> *M, Eigen::MatrixXd startV,
       }
 
     } // try
-    catch (const std::invalid_argument &exc) {
+    catch (const std::invalid_argument &exce) {
       DEBUG_LOG(file, "opt_iter= " << opt_iter
-                                   << ", error: invalid arg: " << exc.what());
+                                   << ", error: invalid arg: " << exce.what());
+      // Rcpp::Rcout << "invalid_argument nlopt: " << exce.what() <<
+      // std::endl;
 
     } // catch
-    catch (nlopt::roundoff_limited &exec) {
+    catch (nlopt::roundoff_limited &exce) {
       DEBUG_LOG(file, "opt_iter= " << opt_iter << ", error: roundoff_limited");
+      // Rcpp::Rcout << "Roundoff_limited nlopt: " << exce.what() <<
+      // std::endl;
       //  cout << "bogo" << endl;
     } // catch
-    catch (nlopt::forced_stop &exec) {
+    catch (nlopt::forced_stop &exce) {
       DEBUG_LOG(file, "opt_iter= " << opt_iter << ", error: forced_stop");
+      // Rcpp::Rcout << "forced stop nlopt: " << exce.what() << std::endl;
       //  cout << "there" << endl;
     } // catch
-    catch (const std::exception &exc) {
+    catch (const std::exception &exce) {
       DEBUG_LOG(file,
-                "opt_iter= " << opt_iter << ", general error: " << exc.what());
+                "opt_iter= " << opt_iter << ", general error: " << exce.what());
+      // Rcpp::Rcout << "catch all nlopt: " << exce.what() << std::endl;
       // cout << "???" << endl;
-    } catch (...) {
-      Rcpp::stop("Unknow exception thrown in findMAP()");
     } // catch
 
     DEBUG_CLOSE_LOG(file);
@@ -742,10 +746,10 @@ optimizationResult findMAP(statModel<LL, PR> *M, Eigen::MatrixXd startV,
   M->setEST(d);
 
   if (result < 0) {
-    // cerr << __FUNCTION__ << " at line: " << __LINE__ << " result= " << result
+    // cerr << __FUNCTION__ << " at line: " << __LINE__ << " result= " <<
+    // result
     // << endl;
   }
-
   return oR;
 }
 

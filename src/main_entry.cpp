@@ -317,7 +317,8 @@ List run_continuous_single(IntegerVector model, Eigen::MatrixXd Y,
       new_continuous_model_result(anal.model, anal.parms,
                                   200); // have 200 equally spaced values
   ////////////////////////////////////
-  
+
+  Rcpp::Rcout << "startin parallel" << std::endl;
   continuous_deviance aod1;
 #ifndef NO_OMP
 #pragma omp parallel sections
@@ -327,9 +328,7 @@ List run_continuous_single(IntegerVector model, Eigen::MatrixXd Y,
 
 #pragma omp section
     {
-
       if (anal2.disttype == distribution::log_normal) {
-
         estimate_log_normal_aod(&anal2, &aod1);
 
       } else {

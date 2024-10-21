@@ -331,27 +331,18 @@ void estimate_sm_laplace(dichotomous_analysis *DA,
 
   switch ((dich_model)DA->model) {
   case dich_model::d_hill:
-    Rcpp::Rcout << "Hill model" << std::endl;
     a = bmd_analysis_DNC<dich_hillModelNC, IDPrior>(
         Y, D, prior, fixedB, fixedV, DA->degree, DA->BMR, DA->BMD_type,
         DA->alpha * 0.5, 0.02);
-        
-    Rcpp::Rcout << "Done bmd for hill model" << std::endl;
     Xd = X_gradient<dich_hillModelNC>(a.MAP_ESTIMATE, Y, D);
-    Rcpp::Rcout << "Done grad for hill model" << std::endl;
     cv_t = X_cov<dich_hillModelNC>(a.MAP_ESTIMATE, Y, D);
-    Rcpp::Rcout << "Done X_cov for hill model" << std::endl;
     pr = X_logPrior<IDPrior>(a.MAP_ESTIMATE, prior);
-    Rcpp::Rcout << "Done X_logPrior for hill model" << std::endl;
     pr = Xd.transpose() * cv_t * Xd + pr;
     Xd = Xd * pr.inverse() * Xd.transpose() * cv_t;
     res->model_df = Xd.diagonal().array().sum();
 
-    Rcpp::Rcout << "Done hill model" << std::endl;
     break;
   case dich_model::d_gamma:
-
-    Rcpp::Rcout << "Gamma model" << std::endl;
     a = bmd_analysis_DNC<dich_gammaModelNC, IDPrior>(
         Y, D, prior, fixedB, fixedV, DA->degree, DA->BMR, DA->BMD_type,
         DA->alpha * 0.5, 0.02);

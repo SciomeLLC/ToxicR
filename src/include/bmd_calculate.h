@@ -449,7 +449,7 @@ Eigen::MatrixXd bmd_continuous_optimization(
                           is_increasing);
   optimizationResult OptRes;
   // Find the maximum a-posteriori and compute the BMD
-  Rcpp::Rcout << "starting findMAP" << std::endl;
+
   if (init.cols() == 10 && init.rows() == 10) {
     OptRes = findMAP<LL, PR>(&model);
   } else {
