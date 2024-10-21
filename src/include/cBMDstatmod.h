@@ -341,59 +341,62 @@ optimizationResult cfindMAX_W_EQUALITY(cBMDModel<LL, PR> *M,
   info.BMDType = BMDType;
   info.add_info = tail_prob;
   ///////////////////////////////////////////////////////////////////////////////
+#pragma omp critical
+  {
 
-  while (opt_iter < 2 && !good_opt) {
-    nlopt::opt opt(nlopt::LD_AUGLAG, M->nParms());      // alternate optimizer
-    nlopt::opt local_opt(nlopt::LD_LBFGS, M->nParms()); // BOBYQA
-    nlopt::opt local_opt2(nlopt::LN_SBPLX, M->nParms());
-    /////////////////////////////////////////////////////////
-    local_opt.set_xtol_abs(5e-5);
-    local_opt2.set_xtol_abs(5e-5);
-    local_opt.set_initial_step(5e-5);
-    local_opt2.set_initial_step(5e-5);
-    local_opt.set_maxeval(10000);
-    local_opt2.set_maxeval(10000);
-    /////////////////////////////////////////////////////////
-    local_opt.set_lower_bounds(lb);
-    local_opt.set_upper_bounds(ub);
-    local_opt2.set_lower_bounds(lb);
-    local_opt2.set_upper_bounds(ub);
+    while (opt_iter < 2 && !good_opt) {
+      nlopt::opt opt(nlopt::LD_AUGLAG, M->nParms());      // alternate optimizer
+      nlopt::opt local_opt(nlopt::LD_LBFGS, M->nParms()); // BOBYQA
+      nlopt::opt local_opt2(nlopt::LN_SBPLX, M->nParms());
+      /////////////////////////////////////////////////////////
+      local_opt.set_xtol_abs(5e-5);
+      local_opt2.set_xtol_abs(5e-5);
+      local_opt.set_initial_step(5e-5);
+      local_opt2.set_initial_step(5e-5);
+      local_opt.set_maxeval(10000);
+      local_opt2.set_maxeval(10000);
+      /////////////////////////////////////////////////////////
+      local_opt.set_lower_bounds(lb);
+      local_opt.set_upper_bounds(ub);
+      local_opt2.set_lower_bounds(lb);
+      local_opt2.set_upper_bounds(ub);
 
-    if (opt_iter == 0)
-      opt.set_local_optimizer((const nlopt::opt)local_opt);
-    else
-      opt.set_local_optimizer((const nlopt::opt)local_opt2);
-    /////////////////////////////////////////////////////////
-    opt.add_equality_constraint(cequality_constraint<LL, PR>, &info, 1e-4);
-    opt.set_min_objective(neg_pen_likelihood<LL, PR>, M);
-    opt.set_lower_bounds(lb);
-    opt.set_upper_bounds(ub);
-    opt.set_xtol_abs(5e-5);
-    opt.set_maxeval(20000);
-    ///////////////////////////////////////////////
+      if (opt_iter == 0)
+        opt.set_local_optimizer((const nlopt::opt)local_opt);
+      else
+        opt.set_local_optimizer((const nlopt::opt)local_opt2);
+      /////////////////////////////////////////////////////////
+      opt.add_equality_constraint(cequality_constraint<LL, PR>, &info, 1e-4);
+      opt.set_min_objective(neg_pen_likelihood<LL, PR>, M);
+      opt.set_lower_bounds(lb);
+      opt.set_upper_bounds(ub);
+      opt.set_xtol_abs(5e-5);
+      opt.set_maxeval(20000);
+      ///////////////////////////////////////////////
 
-    opt_iter++;              // iterate the optimization try counter
-    result = nlopt::FAILURE; // Avoid uninit var exception checking result after
-                             // NLOPT exception
-    try {
-      result = opt.optimize(x, minf);
-      good_opt = true;
-    } catch (nlopt::roundoff_limited &exc) {
-      good_opt = false;
-      // cout << "Error Round off" << endl;
-    } catch (nlopt::forced_stop &exc) {
-      good_opt = false;
-      // cout << "Error Forced stop" << endl;
-    } catch (const std::invalid_argument &exc) {
-      good_opt = false;
-      //	cout << "SHIT!!" << endl;
-    } catch (const std::exception &exc) {
-      good_opt = false;
-      // cout << "Exception!!" << endl;
-    }
-    if (result > 5) { // Either 5 =
-      // cout << "I am here:" <<  endl;
-      good_opt = false;
+      opt_iter++;              // iterate the optimization try counter
+      result = nlopt::FAILURE; // Avoid uninit var exception checking result
+                               // after NLOPT exception
+      try {
+        result = opt.optimize(x, minf);
+        good_opt = true;
+      } catch (nlopt::roundoff_limited &exc) {
+        good_opt = false;
+        // cout << "Error Round off" << endl;
+      } catch (nlopt::forced_stop &exc) {
+        good_opt = false;
+        // cout << "Error Forced stop" << endl;
+      } catch (const std::invalid_argument &exc) {
+        good_opt = false;
+        //	cout << "SHIT!!" << endl;
+      } catch (const std::exception &exc) {
+        good_opt = false;
+        // cout << "Exception!!" << endl;
+      }
+      if (result > 5) { // Either 5 =
+        // cout << "I am here:" <<  endl;
+        good_opt = false;
+      }
     }
   }
   /*
@@ -560,41 +563,46 @@ optimizationResult cfindMAX_W_BOUND(cBMDModel<LL, PR> *M, Eigen::MatrixXd start,
 
   bool good_opt = false;
   int opt_iter = 0;
-  std::array<nlopt::opt *, 3> optimizers = {&opt, &opt2, &opt3};
-  while (!good_opt && opt_iter <= optimizers.size()) {
-    try {
-      result = optimizers[opt_iter]->optimize(x, minf);
-      good_opt = true;
+#pragma omp critical
+  {
 
-    } catch (nlopt::roundoff_limited &exc) {
-      good_opt = false;
-      DEBUG_LOG(file, "opt_iter= " << opt_iter << ", error: roundoff_limited");
-    } catch (nlopt::forced_stop &exc) {
-      good_opt = false;
-      DEBUG_LOG(file, "opt_iter= " << opt_iter << ", error: roundoff_limited");
-    } catch (const std::invalid_argument &exc) {
-      good_opt = false;
-      DEBUG_LOG(file, "opt_iter= " << opt_iter
-                                   << ", error: invalid arg: " << exc.what());
-    } catch (const std::runtime_error &exc) {
-      good_opt = false;
-      DEBUG_LOG(file,
-                "opt_iter= " << opt_iter << ", general error: " << exc.what());
-    } catch (const std::exception &exc) {
-      good_opt = false;
-      DEBUG_LOG(file,
-                "opt_iter= " << opt_iter << ", general error: " << exc.what());
+    std::array<nlopt::opt *, 3> optimizers = {&opt, &opt2, &opt3};
+    while (!good_opt && opt_iter <= optimizers.size()) {
+      try {
+        result = optimizers[opt_iter]->optimize(x, minf);
+        good_opt = true;
+
+      } catch (nlopt::roundoff_limited &exc) {
+        good_opt = false;
+        DEBUG_LOG(file,
+                  "opt_iter= " << opt_iter << ", error: roundoff_limited");
+      } catch (nlopt::forced_stop &exc) {
+        good_opt = false;
+        DEBUG_LOG(file,
+                  "opt_iter= " << opt_iter << ", error: roundoff_limited");
+      } catch (const std::invalid_argument &exc) {
+        good_opt = false;
+        DEBUG_LOG(file, "opt_iter= " << opt_iter
+                                     << ", error: invalid arg: " << exc.what());
+      } catch (const std::runtime_error &exc) {
+        good_opt = false;
+        DEBUG_LOG(file, "opt_iter= " << opt_iter
+                                     << ", general error: " << exc.what());
+      } catch (const std::exception &exc) {
+        good_opt = false;
+        DEBUG_LOG(file, "opt_iter= " << opt_iter
+                                     << ", general error: " << exc.what());
+      }
+      // Handle optimization failures
+      if (result >= 5) {
+        good_opt = false;
+      }
+      DEBUG_LOG(file, "\topt_iter= " << opt_iter << ", result= " << result
+                                     << ", minf= " << minf
+                                     << ", good_opt= " << good_opt);
+      opt_iter++;
     }
-    // Handle optimization failures
-    if (result >= 5) {
-      good_opt = false;
-    }
-    DEBUG_LOG(file, "\topt_iter= " << opt_iter << ", result= " << result
-                                   << ", minf= " << minf
-                                   << ", good_opt= " << good_opt);
-    opt_iter++;
   }
-
 
   std::vector<double> xxx(M->nParms());
   count = 0;
