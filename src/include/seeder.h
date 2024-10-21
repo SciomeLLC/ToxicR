@@ -51,18 +51,21 @@ public:
       rng = gsl_rng_alloc(T);
     }
     gsl_rng_set(rng, seed);
+    currentSeed = seed;
   }
 
   double get_uniform() {
     if (!rng) {
-      Rcpp::stop("Error: RNG not initialized.");
+      // Rcpp::stop("Error: RNG not initialized.");
+      setSeed(currentSeed);
     }
     return gsl_rng_uniform(rng);
   }
 
   double get_gaussian_ziggurat() {
     if (!rng) {
-      Rcpp::stop("Error: RNG not initialized.");
+      // Rcpp::stop("Error: RNG not initialized.");
+      setSeed(currentSeed);
     }
     return gsl_ran_gaussian_ziggurat(rng, 1.0);
   }
