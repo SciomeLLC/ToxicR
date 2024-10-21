@@ -72,7 +72,8 @@ public:
 
   double get_ran_flat() {
     if (!rng) {
-      Rcpp::stop("Error: RNG not initialized.");
+      // Rcpp::stop("Error: RNG not initialized.");
+      setSeed(currentSeed);
     }
     return gsl_ran_flat(rng, -1, 1);
   }
