@@ -341,7 +341,7 @@ optimizationResult cfindMAX_W_EQUALITY(cBMDModel<LL, PR> *M,
   info.BMDType = BMDType;
   info.add_info = tail_prob;
   ///////////////////////////////////////////////////////////////////////////////
-#pragma omp critical
+#pragma omp master
   {
 
     while (opt_iter < 2 && !good_opt) {
@@ -378,6 +378,7 @@ optimizationResult cfindMAX_W_EQUALITY(cBMDModel<LL, PR> *M,
       result = nlopt::FAILURE; // Avoid uninit var exception checking result
                                // after NLOPT exception
       try {
+        #pragma omp atomic
         result = opt.optimize(x, minf);
         good_opt = true;
       } catch (nlopt::roundoff_limited &exc) {
@@ -563,12 +564,13 @@ optimizationResult cfindMAX_W_BOUND(cBMDModel<LL, PR> *M, Eigen::MatrixXd start,
 
   bool good_opt = false;
   int opt_iter = 0;
-#pragma omp critical
+#pragma omp master
   {
 
     std::array<nlopt::opt *, 3> optimizers = {&opt, &opt2, &opt3};
     while (!good_opt && opt_iter <= optimizers.size()) {
-      try {
+      try { 
+        #pragma omp atomic
         result = optimizers[opt_iter]->optimize(x, minf);
         good_opt = true;
 
