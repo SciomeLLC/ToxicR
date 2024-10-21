@@ -378,9 +378,12 @@ optimizationResult cfindMAX_W_EQUALITY(cBMDModel<LL, PR> *M,
       result = nlopt::FAILURE; // Avoid uninit var exception checking result
                                // after NLOPT exception
       try {
-#pragma omp atomic
-        result = opt.optimize(x, minf);
-        good_opt = true;
+#pragma omp critical
+        {
+
+          result = opt.optimize(x, minf);
+          good_opt = true;
+        }
       } catch (nlopt::roundoff_limited &exc) {
         good_opt = false;
         // cout << "Error Round off" << endl;
