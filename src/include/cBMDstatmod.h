@@ -380,7 +380,6 @@ optimizationResult cfindMAX_W_EQUALITY(cBMDModel<LL, PR> *M,
       try {
 #pragma omp critical
         {
-
           result = opt.optimize(x, minf);
           good_opt = true;
         }
@@ -575,6 +574,19 @@ optimizationResult cfindMAX_W_BOUND(cBMDModel<LL, PR> *M, Eigen::MatrixXd start,
       try {
 #pragma omp critical // Critical section for safe access to shared resource
         {
+          Rcpp::Rcout << "Starting opt with x: " << std::endl;
+          for (const auto&xi : x) {
+            Rcpp::Rcout << "\t" << xi << std::endl;
+          }
+          Rcpp::Rcout << "Lower bound: " << std::endl;
+          for (const auto&l : lb) {
+            Rcpp::Rcout << "\t" << l << std::endl;
+          }
+          Rcpp::Rcout << "Upper bound: " << std::endl;
+          for (const auto&u : ub) {
+            Rcpp::Rcout << "\t" << u << std::endl;
+          }
+          Rcpp::Rcout << "minf: " << minf << std::endl;
           result = optimizers[opt_iter]->optimize(x, minf);
           good_opt = true;
         }
@@ -594,10 +606,14 @@ optimizationResult cfindMAX_W_BOUND(cBMDModel<LL, PR> *M, Eigen::MatrixXd start,
         good_opt = false;
         DEBUG_LOG(file, "opt_iter= " << opt_iter
                                      << ", general error: " << exc.what());
+        Rcpp::Rcout << "NLOPT result code: " << result << std::endl;
+        throw; 
       } catch (const std::exception &exc) {
         good_opt = false;
         DEBUG_LOG(file, "opt_iter= " << opt_iter
                                      << ", general error: " << exc.what());
+        Rcpp::Rcout << "NLOPT result code: " << result << std::endl;
+        throw;
       }
       // Handle optimization failures
       if (result >= 5) {
