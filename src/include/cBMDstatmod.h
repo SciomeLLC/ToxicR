@@ -514,20 +514,16 @@ optimizationResult cfindMAX_W_BOUND(cBMDModel<LL, PR> *M, Eigen::MatrixXd start,
   double minf = 0;
   nlopt::result result = nlopt::FAILURE;
   int vecSize = M->nParms() - 1;
-  std::vector<double> x(vecSize); // drop the number of parameters by 1
-  std::vector<double> lb(vecSize);
-  std::vector<double> ub(vecSize);
+  std::vector<double> x(vecSize), lb(vecSize), ub(vecSize);
   Eigen::MatrixXd datal = M->parmLB();
   Eigen::MatrixXd datau = M->parmUB();
-  lb = std::vector<double>(datal.data(), datal.data() + vecSize);
-  ub = std::vector<double>(datau.data(), datau.data() + vecSize);
-  // Eigen::MatrixXd x = Eigen::MatrixXd::Zero(vecSize, 1); // drop the number
-  // of parameters by 1
+
   int count = 0;
   ///////////////////////////////////////////////////////////////////////////////
   // remove the extra parameter from the list
   ///////////////////////////////////////////////////////////////////////////////
   int p_remove = M->parameter_to_remove(BMDType);
+
   for (int i = 0; i < M->nParms(); i++) {
     if (i != p_remove) {
       lb[count] = datal(i, 0);
@@ -546,75 +542,36 @@ optimizationResult cfindMAX_W_BOUND(cBMDModel<LL, PR> *M, Eigen::MatrixXd start,
   info.BMDType = BMDType;
   info.add_info = tail_prob;
 
+  // Setup optmizers - order matters. Fastest (unstable) to slowest (stable)
+  nlopt::opt opt(nlopt::LD_LBFGS, vecSize);
+  nlopt::opt opt2(nlopt::LN_SBPLX, vecSize);
+  nlopt::opt opt3(nlopt::LN_BOBYQA, vecSize);
+  auto setup_optimizer = [&](nlopt::opt &opt) {
+    opt.set_initial_step(1e-4);
+    opt.set_min_objective(neg_pen_likelihood_contbound<LL, PR>, &info);
+    opt.set_lower_bounds(lb);
+    opt.set_upper_bounds(ub);
+    opt.set_xtol_abs(5e-4);
+    opt.set_maxeval(20000);
+  };
+  setup_optimizer(opt);
+  setup_optimizer(opt2);
+  setup_optimizer(opt3);
+
   bool good_opt = false;
   int opt_iter = 0;
-  //////////////////////////////////////////////////////////////////////////////
-  nlopt::opt opt2(nlopt::LD_LBFGS, vecSize);
-  opt2.set_initial_step(1e-4);
-  opt2.set_min_objective(neg_pen_likelihood_contbound<LL, PR>, &info);
-  opt2.set_lower_bounds(lb);
-  opt2.set_upper_bounds(ub);
-  opt2.set_xtol_abs(5e-4);
-  opt2.set_maxeval(20000);
-  //////////////////////////////////////////////////////////////////////////////
-  nlopt::opt opt(nlopt::LN_BOBYQA, vecSize);
-  opt.set_initial_step(1e-4);
-  opt.set_min_objective(neg_pen_likelihood_contbound<LL, PR>, &info);
-  opt.set_lower_bounds(lb);
-  opt.set_upper_bounds(ub);
-  opt.set_xtol_abs(5e-4);
-  opt.set_maxeval(20000);
-
-  nlopt::opt opt3(nlopt::LN_SBPLX, vecSize);
-  opt3.set_initial_step(1e-4);
-  opt3.set_min_objective(neg_pen_likelihood_contbound<LL, PR>, &info);
-  opt3.set_lower_bounds(lb);
-  opt3.set_upper_bounds(ub);
-  opt3.set_xtol_abs(5e-4);
-  opt3.set_maxeval(20000);
-  ///////////////////////////////////////////////////////////////////////////////
-
-  //	if(M->modelling_type() == cont_model::gamma_aerts){
-  //		opt_iter = 1;
-  //	}
-  //    cout << " cFINDMAX init=" << endl;
-  //    for (auto i: x)
-  //        std::cout << i << ' ';
-
-  while (!good_opt && opt_iter <= 2) {
+  std::array<nlopt::opt *, 3> optimizers = {&opt, &opt2, &opt3};
+  while (!good_opt && opt_iter <= optimizers.size()) {
     try {
-
-      switch (opt_iter) {
-      case 0:
-        // fastest algorithm first
-        //				cout << "huh1";
-        opt_iter++;
-        result = opt2.optimize(x, minf);
-        break;
-      case 1:
-        // second fastest algorithm next
-        //				cout << "huh2";
-        opt_iter++;
-        result = opt3.optimize(x, minf);
-        break;
-      default:
-        // most stable one third -- but slower
-        //				cout << "huh3 " << result;
-        opt_iter++;
-        result = opt.optimize(x, minf);
-      }
-      // file << "result= " << result << ", minf= " << minf << endl;
-      // flush(file);
+      result = optimizers[opt_iter]->optimize(x, minf);
       good_opt = true;
-      // opt_iter++;
+
     } catch (nlopt::roundoff_limited &exc) {
       good_opt = false;
       DEBUG_LOG(file, "opt_iter= " << opt_iter << ", error: roundoff_limited");
-      //	cout << "Error Round off" << endl;
     } catch (nlopt::forced_stop &exc) {
       good_opt = false;
       DEBUG_LOG(file, "opt_iter= " << opt_iter << ", error: roundoff_limited");
-      //	cout << "Error Forced stop" << endl;
     } catch (const std::invalid_argument &exc) {
       good_opt = false;
       DEBUG_LOG(file, "opt_iter= " << opt_iter
@@ -623,23 +580,23 @@ optimizationResult cfindMAX_W_BOUND(cBMDModel<LL, PR> *M, Eigen::MatrixXd start,
       good_opt = false;
       DEBUG_LOG(file,
                 "opt_iter= " << opt_iter << ", general error: " << exc.what());
-      // cout << "Exception!!" << endl;
     } catch (const std::exception &exc) {
       good_opt = false;
       DEBUG_LOG(file,
                 "opt_iter= " << opt_iter << ", general error: " << exc.what());
-      // cout << "Exception!!" << endl;
     }
-    if (result >= 5) { // Either 5 =
+    // Handle optimization failures
+    if (result >= 5) {
       good_opt = false;
     }
     DEBUG_LOG(file, "\topt_iter= " << opt_iter << ", result= " << result
                                    << ", minf= " << minf
                                    << ", good_opt= " << good_opt);
+    opt_iter++;
   }
-  //	cout << "Opt "<< good_opt << endl;
-  // Eigen::MatrixXd xxx = Eigen::MatrixXd::Zero(M->nParms(), 1);
-  std::vector<double> xxx(x.size() + 1);
+
+
+  std::vector<double> xxx(M->nParms());
   count = 0;
   for (int i = 0; i < M->nParms(); i++) {
     if (i != p_remove) {
@@ -650,10 +607,8 @@ optimizationResult cfindMAX_W_BOUND(cBMDModel<LL, PR> *M, Eigen::MatrixXd start,
 
   if (good_opt) { // if the opimization criteria worked
     x = M->bound_fix(xxx, BMDType, BMRF, tail_prob, BMD, isInc);
-    Eigen::MatrixXd result_matrix = Eigen::MatrixXd::Zero(x.size(), 1);
-    for (int i = 0; i < x.size(); ++i) {
-      result_matrix(i, 0) = x[i];
-    }
+    Eigen::MatrixXd result_matrix =
+        Eigen::Map<Eigen::VectorXd>(x.data(), x.size());
     oR.result = result;
     oR.functionV = minf;
     oR.max_parms = result_matrix;
