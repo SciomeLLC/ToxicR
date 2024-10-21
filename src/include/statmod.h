@@ -637,106 +637,109 @@ optimizationResult findMAP(statModel<LL, PR> *M, Eigen::MatrixXd startV,
   //  set up a bunch of differnt plausible optimizers in case of failure
   //  the first one is mainly to get a better idea of a starting value
   //  though it often converges to the optimum.
+#pragma omp master
+  {
+    nlopt::opt opt1(nlopt::LN_SBPLX, M->nParms());
+    nlopt::opt opt3(nlopt::LD_LBFGS, M->nParms());
+    nlopt::opt opt2(nlopt::LN_BOBYQA, M->nParms());
 
-  nlopt::opt opt1(nlopt::LN_SBPLX, M->nParms());
-  nlopt::opt opt3(nlopt::LD_LBFGS, M->nParms());
-  nlopt::opt opt2(nlopt::LN_BOBYQA, M->nParms());
+    nlopt::opt opt4(nlopt::LN_COBYLA, M->nParms());
+    nlopt::opt opt5(nlopt::LD_SLSQP, M->nParms());
 
-  nlopt::opt opt4(nlopt::LN_COBYLA, M->nParms());
-  nlopt::opt opt5(nlopt::LD_SLSQP, M->nParms());
+    nlopt::opt *opt_ptr;
 
-  nlopt::opt *opt_ptr;
-  Rcpp::Rcout << "prepped nlopt" << std::endl;
+    int opt_iter;
+    // look at 5 optimization algorithms :-)
+    int start_iter = 0; //(OPTIM_USE_SUBPLX & flags)?0:1;
 
-  int opt_iter;
-  // look at 5 optimization algorithms :-)
-  int start_iter = 0; //(OPTIM_USE_SUBPLX & flags)?0:1;
+    for (opt_iter = start_iter; opt_iter <= 4; opt_iter++) {
 
-  for (opt_iter = start_iter; opt_iter <= 4; opt_iter++) {
-
-    // Ensure that starting values are within bounds
-    for (int i = 0; i < M->nParms(); i++) {
-      x[i] = std::min(std::max(x[i], lb[i]), ub[i]);
-    }
-
-    switch (opt_iter) {
-    case 0:
-      opt_ptr = &opt1;
-      opt_ptr->set_maxeval(1200);
-      break;
-    case 1:
-      opt_ptr = &opt2;
-      opt_ptr->set_maxeval(5000);
-      break;
-    case 2:
-      opt_ptr = &opt3;
-      opt_ptr->set_maxeval(5000);
-      break;
-    case 3:
-      opt_ptr = &opt4;
-      opt_ptr->set_maxeval(5000);
-    default:
-      opt_ptr = &opt5;
-      opt_ptr->set_maxeval(5000);
-      break;
-    }
-
-    opt_ptr->set_lower_bounds(lb);
-    opt_ptr->set_upper_bounds(ub);
-    // opt_ptr->set_ftol_rel(1e-8);
-    opt_ptr->set_xtol_rel(1e-9);
-    // opt_ptr->set_initial_step(1e-3);
-    opt_ptr->set_min_objective(neg_pen_likelihood<LL, PR>, M);
-
-    ////////////////////////////////////////////////
-    //////////////////////////////////////////////
-    // set the start distance to a size
-    // nlopt's default options suck
-    ///////////////////////////////////////////////
-
-    try {
-      result = opt_ptr->optimize(x, minf);
-      // note even if it doesn't converge the x will be updated
-      // to the best value the optimizer ever had, which will allow
-      // the next optimizer to carry on.
-      // Exit the loop if good result and not first try.
-      // lco: should change to a break statement since "10"
-      // could be legitimate iteration in the future
-
-      if (opt_iter >= 1 && result > 0 && result < 5) {
-
-        opt_iter = 10; // if it made it here it will break the loop
+      // Ensure that starting values are within bounds
+      for (int i = 0; i < M->nParms(); i++) {
+        x[i] = std::min(std::max(x[i], lb[i]), ub[i]);
       }
 
-    } // try
-    catch (const std::invalid_argument &exce) {
-      DEBUG_LOG(file, "opt_iter= " << opt_iter
-                                   << ", error: invalid arg: " << exce.what());
-      // Rcpp::Rcout << "invalid_argument nlopt: " << exce.what() <<
-      // std::endl;
+      switch (opt_iter) {
+      case 0:
+        opt_ptr = &opt1;
+        opt_ptr->set_maxeval(1200);
+        break;
+      case 1:
+        opt_ptr = &opt2;
+        opt_ptr->set_maxeval(5000);
+        break;
+      case 2:
+        opt_ptr = &opt3;
+        opt_ptr->set_maxeval(5000);
+        break;
+      case 3:
+        opt_ptr = &opt4;
+        opt_ptr->set_maxeval(5000);
+      default:
+        opt_ptr = &opt5;
+        opt_ptr->set_maxeval(5000);
+        break;
+      }
 
-    } // catch
-    catch (nlopt::roundoff_limited &exce) {
-      DEBUG_LOG(file, "opt_iter= " << opt_iter << ", error: roundoff_limited");
-      // Rcpp::Rcout << "Roundoff_limited nlopt: " << exce.what() <<
-      // std::endl;
-      //  cout << "bogo" << endl;
-    } // catch
-    catch (nlopt::forced_stop &exce) {
-      DEBUG_LOG(file, "opt_iter= " << opt_iter << ", error: forced_stop");
-      // Rcpp::Rcout << "forced stop nlopt: " << exce.what() << std::endl;
-      //  cout << "there" << endl;
-    } // catch
-    catch (const std::exception &exce) {
-      DEBUG_LOG(file,
-                "opt_iter= " << opt_iter << ", general error: " << exce.what());
-      // Rcpp::Rcout << "catch all nlopt: " << exce.what() << std::endl;
-      // cout << "???" << endl;
-    } // catch
+      opt_ptr->set_lower_bounds(lb);
+      opt_ptr->set_upper_bounds(ub);
+      // opt_ptr->set_ftol_rel(1e-8);
+      opt_ptr->set_xtol_rel(1e-9);
+      // opt_ptr->set_initial_step(1e-3);
+      opt_ptr->set_min_objective(neg_pen_likelihood<LL, PR>, M);
 
-    DEBUG_CLOSE_LOG(file);
-  } // for opt_iter
+      ////////////////////////////////////////////////
+      //////////////////////////////////////////////
+      // set the start distance to a size
+      // nlopt's default options suck
+      ///////////////////////////////////////////////
 
+      try {
+#pragma omp critical
+        {
+          result = opt_ptr->optimize(x, minf);
+          // note even if it doesn't converge the x will be updated
+          // to the best value the optimizer ever had, which will allow
+          // the next optimizer to carry on.
+          // Exit the loop if good result and not first try.
+          // lco: should change to a break statement since "10"
+          // could be legitimate iteration in the future
+
+          if (opt_iter >= 1 && result > 0 && result < 5) {
+
+            opt_iter = 10; // if it made it here it will break the loop
+          }
+        }
+      } // try
+      catch (const std::invalid_argument &exce) {
+        DEBUG_LOG(file, "opt_iter= " << opt_iter << ", error: invalid arg: "
+                                     << exce.what());
+        // Rcpp::Rcout << "invalid_argument nlopt: " << exce.what() <<
+        // std::endl;
+
+      } // catch
+      catch (nlopt::roundoff_limited &exce) {
+        DEBUG_LOG(file,
+                  "opt_iter= " << opt_iter << ", error: roundoff_limited");
+        // Rcpp::Rcout << "Roundoff_limited nlopt: " << exce.what() <<
+        // std::endl;
+        //  cout << "bogo" << endl;
+      } // catch
+      catch (nlopt::forced_stop &exce) {
+        DEBUG_LOG(file, "opt_iter= " << opt_iter << ", error: forced_stop");
+        // Rcpp::Rcout << "forced stop nlopt: " << exce.what() << std::endl;
+        //  cout << "there" << endl;
+      } // catch
+      catch (const std::exception &exce) {
+        DEBUG_LOG(file, "opt_iter= " << opt_iter
+                                     << ", general error: " << exce.what());
+        // Rcpp::Rcout << "catch all nlopt: " << exce.what() << std::endl;
+        // cout << "???" << endl;
+      } // catch
+
+      DEBUG_CLOSE_LOG(file);
+    } // for opt_iter
+  }
   Eigen::Map<Eigen::MatrixXd> d(x.data(), M->nParms(), 1);
   oR.result = result;
   oR.functionV = minf;
