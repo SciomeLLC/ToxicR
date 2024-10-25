@@ -513,13 +513,16 @@ optimizationResult cfindMAX_W_BOUND(cBMDModel<LL, PR> *M, Eigen::MatrixXd start,
   optimizationResult oR;
   double minf = 0;
   nlopt::result result = nlopt::FAILURE;
-  int vecSize = start.rows() - 1;
+  int vecSize = M->nParms() - 1;
   std::vector<double> x(vecSize); // drop the number of parameters by 1
   std::vector<double> lb(vecSize);
   std::vector<double> ub(vecSize);
   Eigen::MatrixXd datal = M->parmLB();
   Eigen::MatrixXd datau = M->parmUB();
-  // Eigen::MatrixXd x = Eigen::MatrixXd::Zero(vecSize, 1); // drop the number of parameters by 1
+  lb = std::vector<double>(datal.data(), datal.data() + vecSize);
+  ub = std::vector<double>(datau.data(), datau.data() + vecSize);
+  // Eigen::MatrixXd x = Eigen::MatrixXd::Zero(vecSize, 1); // drop the number
+  // of parameters by 1
   int count = 0;
   ///////////////////////////////////////////////////////////////////////////////
   // remove the extra parameter from the list
@@ -529,15 +532,10 @@ optimizationResult cfindMAX_W_BOUND(cBMDModel<LL, PR> *M, Eigen::MatrixXd start,
     if (i != p_remove) {
       lb[count] = datal(i, 0);
       ub[count] = datau(i, 0);
-      double temp = start(i, 0);
-      if (temp < lb[count])
-        temp = lb[count];
-      else if (temp > ub[count])
-        temp = ub[count];
-      x[count] = temp;
+      x[count] = std::max(lb[count], std::min(start(i, 0), ub[count]));
       count++;
-    } // end if
-  }   // end for
+    }
+  }
 
   ///////////////////////////////////////////////////////////////////////////////
   c_optimInfo<LL, PR> info;
@@ -588,23 +586,22 @@ optimizationResult cfindMAX_W_BOUND(cBMDModel<LL, PR> *M, Eigen::MatrixXd start,
 
       switch (opt_iter) {
       case 0:
+        // fastest algorithm first
+        //				cout << "huh1";
         opt_iter++;
-        result =
-            opt2.optimize(x, minf); // fastest algorithm first
-                                    //				cout << "huh1";
+        result = opt2.optimize(x, minf);
         break;
       case 1:
+        // second fastest algorithm next
+        //				cout << "huh2";
         opt_iter++;
-        result =
-            opt3.optimize(x, minf); // second fastest algorithm next
-                                    //				cout << "huh2";
+        result = opt3.optimize(x, minf);
         break;
       default:
+        // most stable one third -- but slower
+        //				cout << "huh3 " << result;
         opt_iter++;
-        result = opt.optimize(
-            x,
-            minf); // most stable one third -- but slower
-                   //				cout << "huh3 " << result;
+        result = opt.optimize(x, minf);
       }
       // file << "result= " << result << ", minf= " << minf << endl;
       // flush(file);
@@ -655,7 +652,7 @@ optimizationResult cfindMAX_W_BOUND(cBMDModel<LL, PR> *M, Eigen::MatrixXd start,
     x = M->bound_fix(xxx, BMDType, BMRF, tail_prob, BMD, isInc);
     Eigen::MatrixXd result_matrix = Eigen::MatrixXd::Zero(x.size(), 1);
     for (int i = 0; i < x.size(); ++i) {
-      result_matrix(i, 0) = x[i]; 
+      result_matrix(i, 0) = x[i];
     }
     oR.result = result;
     oR.functionV = minf;
