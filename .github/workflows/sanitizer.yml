@@ -80,7 +80,6 @@ jobs:
         shell: Rscript {0}
         
       - name: Upload check results
-        if: failure()
         uses: actions/upload-artifact@v3
         with:
           name: ${{ runner.os }}-rrelease-results
@@ -135,14 +134,6 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get install --yes libcurl4-openssl-dev
-      # - name: Install system dependencies
-      #   env:
-      #     RHUB_PLATFORM: linux-x86_64-ubuntu-gcc
-      #   run: |
-      #     Rscript -e "remotes::install_github('r-hub/sysreqs')"
-      #     sysreqs=$(Rscript -e "cat(sysreqs::sysreq_commands('DESCRIPTION'))")
-      #     sudo -s eval "$sysreqs"
-
       - name: Install dependencies
         run: |
           remotes::install_deps(dependencies = TRUE)
@@ -161,7 +152,6 @@ jobs:
         shell: Rscript {0}
         
       - name: Upload check results
-        if: failure()
         uses: actions/upload-artifact@v3
         with:
           name: ${{ runner.os }}-rrelease-results
