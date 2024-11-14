@@ -83,7 +83,9 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ${{ runner.os }}-rrelease-results
-          path: check
+          path: |
+            check
+            !check/ToxicR.Rcheck/00_pkg_src
   ubsan-check:
     runs-on: ubuntu-latest
     env:
@@ -155,4 +157,6 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: ${{ runner.os }}-rrelease-results
-          path: check
+          path: |
+            check
+            !check/ToxicR.Rcheck/00_pkg_src
