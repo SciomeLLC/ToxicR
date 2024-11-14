@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ "main" ]
   push:
-    branches: ["nlopt-upate"]
+    branches: ["nlopt-update"]
   workflow_dispatch: 
     
   
