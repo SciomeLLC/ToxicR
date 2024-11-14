@@ -48,7 +48,7 @@ jobs:
       - name: Cache
         uses: actions/cache@v3
         with:
-            path: |
+          path: |
             ./build/
             ~/vcpkg
             ~/.cache/vcpkg/archives
