@@ -66,7 +66,7 @@ jobs:
             ${{ runner.os }}-${{ env.BUILD_TYPE }}-
       - uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-        packages: | 
+          packages: | 
             cmake cmake-data gsl dh-elpa-helper libcmark-gfm-extensions0.29.0.gfm.3 
             libcmark-gfm0.29.0.gfm.3 libcurl4-openssl-dev libjsoncpp25 librhash0 
             pandoc pandoc-data
