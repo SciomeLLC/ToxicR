@@ -18,13 +18,13 @@ jobs:
     strategy:
         fail-fast: false
         matrix:
-        compiler:
-            # - llvm-16.0.6
-            # - llvm-17.0.6
-            - llvm-18.1.8
-            # - llvm-19.1.0
-            # - llvm-20.0.0
-        R: ['release', 'devel']
+            compiler:
+                # - llvm-16.0.6
+                # - llvm-17.0.6
+                - llvm-18.1.8
+                # - llvm-19.1.0
+                # - llvm-20.0.0
+            R: ['release', 'devel']
     env:
       CC: clang
       CXX: clang++
